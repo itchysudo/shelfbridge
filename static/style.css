@@ -48,6 +48,24 @@ h1, h2, h3 {
     letter-spacing: -0.005em;
 }
 
+/* ---------- Persistent Help link (top-right of every page) ---------- */
+
+.help-link {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.5rem;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 6px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.help-link:hover {
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+}
+
 /* ---------- Header ---------- */
 
 .site-header {
@@ -601,6 +619,36 @@ h1, h2, h3 {
 @keyframes slide {
     0%   { transform: translateX(-100%); }
     100% { transform: translateX(250%); }
+}
+
+/* ---------- Guide page touches ---------- */
+
+/* The guide has h4 sub-headings inside an h3 section — give them a tighter
+   rhythm so the troubleshooting list reads scannably. */
+.card h4 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin: 1.25rem 0 0.25rem;
+    color: var(--ink);
+}
+
+.version-line {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.card code {
+    background: var(--hairline);
+    padding: 0.05rem 0.35rem;
+    border-radius: 3px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.85em;
+}
+
+/* Guide page can have two cards stacked — give them breathing room. */
+.card + .card {
+    margin-top: 1.5rem;
 }
 
 /* ---------- Footer ---------- */

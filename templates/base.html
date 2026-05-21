@@ -7,6 +7,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    {# Persistent Help link, top-right of every page. Absolute-positioned
+       so it doesn't disturb the centred header layout. #}
+    <a href="{{ url_for('guide') }}" class="help-link">Help &amp; guide</a>
+
     <header class="site-header">
         <h1 class="site-title">
             {# Open-book glyph — feather-icons "book-open". Inline SVG so the
@@ -23,7 +27,10 @@
         <p class="tagline">Fable → Goodreads</p>
     </header>
 
-    {# Three-step progress indicator. Each page sets `step` to 1, 2, or 3. #}
+    {# Three-step progress indicator. Each page sets `step` to 1, 2, or 3.
+       The block lets meta pages (e.g. the Help guide) suppress it entirely
+       by overriding with `{% block steps %}{% endblock %}`. #}
+    {% block steps %}
     <nav class="steps" aria-label="Progress">
         <ol>
             <li class="{% if step == 1 %}current{% elif step > 1 %}done{% endif %}">
@@ -40,6 +47,7 @@
             </li>
         </ol>
     </nav>
+    {% endblock %}
 
     <main class="container">
         {% block content %}{% endblock %}

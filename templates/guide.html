@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Help &amp; guide — ShelfBridge{% endblock %}
+
+{# The guide is a meta page — it's not part of the three-step wizard, so
+   hide the step indicator entirely. #}
+{% block steps %}{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h2>How to use ShelfBridge</h2>
+    <p class="lead">
+        A complete walkthrough of moving your library from Fable to Goodreads.
+        Each section below corresponds to one of the three steps in the wizard.
+        If something goes wrong, the troubleshooting tips lower down cover the
+        most common issues.
+    </p>
+
+    <h3>Step 1 — Connect to Fable</h3>
+    <p>
+        On the welcome page, click <strong>"Connect to Fable"</strong>.
+        A second browser window will open by itself and show Fable's login
+        page. Log in there just as you normally would on Fable's website.
+        ShelfBridge never sees your password — you type it into Fable's own
+        page directly.
+    </p>
+    <p>
+        Once you're logged in, come back to the ShelfBridge tab and click
+        <strong>"I'm logged in"</strong>. ShelfBridge will then read your
+        shelves directly from Fable's API. For most libraries this takes
+        between ten seconds and a minute.
+    </p>
+    <p class="note">
+        <strong>Heads up:</strong> the second browser window is a fresh
+        Chromium instance — it doesn't share cookies with your normal
+        browser. That means you have to log in again here, even if you're
+        already signed into Fable in your usual browser. This is intentional
+        and keeps your password out of our process entirely.
+    </p>
+
+    <h3>Step 2 — Review your library</h3>
+    <p>
+        You'll see a table of your books, one row per title. Take a moment to
+        check everything looks right. Anything you click becomes editable, and
+        changes save automatically when you click away — there's no "save"
+        button to worry about.
+    </p>
+    <p>What you can do here:</p>
+    <ul class="explainer">
+        <li><strong>Edit any cell</strong> — title, author, shelf, dates, rating, or ISBN. Just click and type.</li>
+        <li><strong>Star ratings</strong> — click a star to set a rating. Click the same star again to clear it. (Fable's web API doesn't expose ratings, so unless you rated books in the iOS app, this column will be empty when you arrive.)</li>
+        <li><strong>Filter by shelf</strong> — the pill buttons above the table let you focus on just Read, Reading, or Want to Read.</li>
+        <li><strong>Delete a row</strong> — click the small × at the end of any row, then confirm.</li>
+    </ul>
+
+    <h4>What the "month only" badge means</h4>
+    <p>
+        If you see a small <em>"month only"</em> or <em>"year only"</em>
+        badge next to one of the dates, it means Fable only knew the month or
+        year for that book, not the exact day. We've defaulted the missing
+        parts to "01" so the date is still valid, but you may want to correct
+        it manually. The badge disappears as soon as you edit the date.
+    </p>
+
+    <h3>Step 3 — Export and import to Goodreads</h3>
+    <p>
+        Click <strong>"Continue to export →"</strong>. The export page shows
+        a preview of the file you're about to create plus a few notes about
+        how Goodreads handles certain columns. When you're ready, click
+        <strong>"Download Goodreads file"</strong> — your browser will save
+        a file called <code>goodreads_import.csv</code>.
+    </p>
+    <p>To get it into Goodreads:</p>
+    <ol class="explainer">
+        <li>Open <a href="https://www.goodreads.com/review/import" target="_blank" rel="noopener">goodreads.com/review/import</a> in a new tab.</li>
+        <li>Click <em>Choose File</em> and select the <code>goodreads_import.csv</code> you just downloaded.</li>
+        <li>Click <em>Import books</em>. Wait a minute or two while Goodreads processes it.</li>
+        <li>Done — your books will appear in your Goodreads library, on the right shelves, with the right dates.</li>
+    </ol>
+
+    <h3>Things to know about dates and ratings</h3>
+    <ul class="explainer">
+        <li><strong>Date Read</strong> in Goodreads maps to your Fable <em>finish</em> date — straightforward.</li>
+        <li><strong>Date Added</strong> in Goodreads maps to your Fable <em>start</em> date, because Goodreads' CSV import format has no "date started reading" column. The start date is the best historical signal we have for when a book entered your library.</li>
+        <li>Books on your <em>To-Read</em> shelf (you haven't started them) will have a blank Date Added in the CSV. Goodreads fills that in with today's date on import.</li>
+        <li><strong>Reviews don't transfer.</strong> Goodreads' CSV importer ignores any review text, so we don't bother sending it. Ratings, shelves, and dates all come across fine.</li>
+    </ul>
+
+    <h3>Privacy</h3>
+    <p>
+        Everything in ShelfBridge runs on your own computer. Your Fable
+        password is never seen or stored by this tool — you type it into
+        Fable's website directly, in the second browser window. Your book
+        data lives in a single file called <code>books.db</code> inside the
+        ShelfBridge folder; delete that file to wipe everything. The only
+        external service the tool talks to is Fable's own API at
+        <code>api.fable.co</code>, to read your book list.
+    </p>
+
+    <h3>Troubleshooting</h3>
+
+    <h4>"Couldn't capture Fable's auth headers"</h4>
+    <p>
+        This usually means you weren't fully signed in to Fable when you
+        clicked "I'm logged in". Log out of Fable, refresh the tool, click
+        "Try again", and walk through the connect step once more.
+    </p>
+
+    <h4>The browser window didn't open automatically</h4>
+    <p>
+        Open your browser yourself and go to
+        <a href="http://localhost:5050" target="_blank" rel="noopener">http://localhost:5050</a>.
+    </p>
+
+    <h4>The Chromium window opens but Fable's login page won't load</h4>
+    <p>
+        Check your internet connection. If it's fine, open
+        <a href="https://fable.co/login" target="_blank" rel="noopener">fable.co/login</a>
+        in your normal browser to confirm Fable itself is up.
+    </p>
+
+    <h4>"Port 5050 already in use"</h4>
+    <p>
+        Another copy of ShelfBridge is probably still running in another
+        Terminal window. Close that window first, then launch again.
+    </p>
+
+    <h4>Something else?</h4>
+    <p>
+        See the <a href="#about">About section below</a> for how to get in
+        touch.
+    </p>
+</section>
+
+<section class="card" id="about">
+    <h2>About</h2>
+    <p class="version-line">
+        <strong>ShelfBridge</strong> &nbsp; v{{ version }}
+    </p>
+    <p>
+        Created by
+        <a href="https://github.com/itchysudo" target="_blank" rel="noopener">itchysudo</a>.
+        Released under the
+        <a href="https://github.com/itchysudo/shelfbridge/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>.
+    </p>
+    <p>
+        Source code:
+        <a href="https://github.com/itchysudo/shelfbridge" target="_blank" rel="noopener">github.com/itchysudo/shelfbridge</a>
+    </p>
+
+    <h3>Need help or want to report a bug?</h3>
+    <p>
+        If you've hit a problem, have a feature idea, or just want to ask a
+        question, please
+        <a href="https://github.com/itchysudo/shelfbridge/issues" target="_blank" rel="noopener">open an issue on GitHub</a>.
+        Searching past issues first is often the quickest way to find an
+        answer — someone else may have asked the same thing.
+    </p>
+</section>
+{% endblock %}

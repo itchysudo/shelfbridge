@@ -26,6 +26,10 @@ import transformer
 
 app = Flask(__name__)
 
+# Bumped on each release. Shown on the Help & guide page so users (and bug
+# reporters) can tell which version they're on.
+VERSION = "1.0.0"
+
 
 # ---------------------------------------------------------------------------
 # Page routes — each one renders an HTML template.
@@ -49,6 +53,12 @@ def export():
     """Step 3: Preview and download the Goodreads CSV."""
     books = db.get_all_books()
     return render_template("export.html", books=books)
+
+
+@app.route("/guide")
+def guide():
+    """Help & guide page — walkthrough, FAQ, and About section."""
+    return render_template("guide.html", version=VERSION)
 
 
 # ---------------------------------------------------------------------------
