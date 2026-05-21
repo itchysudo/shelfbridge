@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShelfBridge</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Persistent Help link, top-right of every page. -->
+    <a href="#" class="help-link" id="help-link">Help &amp; guide</a>
+
+    <header class="site-header">
+        <h1 class="site-title">
+            <svg class="header-icon" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+            ShelfBridge
+        </h1>
+        <p class="tagline">Fable → Goodreads</p>
+    </header>
+
+    <!-- Step indicator. JS hides it on the guide view. -->
+    <nav class="steps" id="step-nav" aria-label="Progress">
+        <ol>
+            <li id="step-1"><span class="step-num">1</span><span class="step-label">Connect</span></li>
+            <li id="step-2"><span class="step-num">2</span><span class="step-label">Review</span></li>
+            <li id="step-3"><span class="step-num">3</span><span class="step-label">Export</span></li>
+        </ol>
+    </nav>
+
+    <main class="container">
+
+        <!-- ============================================================== -->
+        <!-- View: INTRO (the welcome page)                                  -->
+        <!-- ============================================================== -->
+        <section class="view card" data-view="intro" hidden>
+            <h2>Welcome</h2>
+            <p class="lead">
+                ShelfBridge moves your reading library from Fable to Goodreads.
+                The whole process takes about five minutes.
+            </p>
+
+            <h3>What happens next</h3>
+            <ol class="explainer">
+                <li>We'll open a Fable tab so you can log in (or use one you already have open).</li>
+                <li>We'll read your library and bring it back here for review.</li>
+                <li>You'll download a file and upload it to Goodreads. Done.</li>
+            </ol>
+
+            <div class="actions">
+                <button id="connect-btn" class="btn btn-primary">Connect to Fable</button>
+                <a href="#" id="skip-to-library" class="btn btn-link">View saved library →</a>
+            </div>
+
+            <p class="reassure">
+                Your Fable password is never seen or stored by this extension —
+                you sign in on Fable's own page, in your normal browser.
+            </p>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- View: CONNECTING (in-progress while we scrape)                  -->
+        <!-- ============================================================== -->
+        <section class="view card" data-view="connecting" hidden>
+            <h2 id="connecting-heading">Reading your library…</h2>
+            <p class="lead" id="connecting-message">This usually takes a few seconds.</p>
+            <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+            <p class="muted" id="connecting-detail"></p>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- View: LOGIN NEEDED (user isn't signed in to Fable)              -->
+        <!-- ============================================================== -->
+        <section class="view card" data-view="login_needed" hidden>
+            <h2>Sign in to Fable</h2>
+            <p class="lead" id="login-message">
+                We opened a Fable tab — please sign in there, then come back
+                and click Connect again.
+            </p>
+            <div class="actions">
+                <button id="connect-retry-btn" class="btn btn-primary">I'm signed in — Connect again</button>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- View: LIBRARY (editable table of scraped books)                 -->
+        <!-- ============================================================== -->
+        <section class="view card" data-view="library" hidden>
+            <h2>Your library</h2>
+            <p class="lead">
+                Tidy up the list below before exporting. Click any cell to
+                edit — your changes save automatically.
+            </p>
+            <p class="note">
+                <strong>About the "Started" column:</strong> Goodreads doesn't
+                have a "date started reading" field in its CSV import. We use
+                Fable's start date as Goodreads' <em>Date Added</em> instead —
+                it's the closest signal we have to when each book entered your
+                library.
+            </p>
+
+            <div class="filter-bar" role="tablist" aria-label="Filter by shelf">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="read">Read</button>
+                <button class="filter-btn" data-filter="currently-reading">Reading</button>
+                <button class="filter-btn" data-filter="to-read">Want to read</button>
+            </div>
+
+            <p class="summary" id="summary">…</p>
+
+            <div id="library-empty" class="empty" hidden>
+                You don't have any books saved yet. Click <em>Connect to Fable</em>
+                on the welcome screen to import them.
+            </div>
+
+            <table class="book-table editable" id="book-table">
+                <thead>
+                    <tr>
+                        <th class="cover-cell" aria-label="Cover"></th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Shelf</th>
+                        <th>Started</th>
+                        <th>Finished</th>
+                        <th>Rating</th>
+                        <th>ISBN</th>
+                        <th aria-label="Actions"></th>
+                    </tr>
+                </thead>
+                <tbody id="book-tbody"></tbody>
+            </table>
+
+            <div class="actions">
+                <button id="goto-export-btn" class="btn btn-primary">Continue to export →</button>
+                <a href="#" id="back-to-intro" class="btn btn-link">← Start over</a>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- View: EXPORT (download + Goodreads instructions)                -->
+        <!-- ============================================================== -->
+        <section class="view card" data-view="export" hidden>
+            <h2>Download &amp; import</h2>
+            <p class="lead">
+                Almost done. Download the file below, then upload it to
+                Goodreads using the steps shown.
+            </p>
+
+            <div class="actions">
+                <button id="download-btn" class="btn btn-primary">Download Goodreads file</button>
+                <a href="#" id="back-to-library" class="btn btn-link">← Back to library</a>
+            </div>
+
+            <h3>How to import into Goodreads</h3>
+            <ol class="explainer">
+                <li>Open <a href="https://www.goodreads.com/review/import" target="_blank" rel="noopener">goodreads.com/review/import</a> in a new tab.</li>
+                <li>Click <em>Choose File</em> and pick the file you just downloaded.</li>
+                <li>Click <em>Import books</em> and wait a minute or two.</li>
+            </ol>
+
+            <p class="note">
+                <strong>A couple of things to know about the dates:</strong>
+            </p>
+            <ul class="explainer">
+                <li><strong>Date Read</strong> in Goodreads = your Fable <em>finish</em> date.</li>
+                <li><strong>Date Added</strong> in Goodreads is mapped from your Fable
+                    <em>start</em> date — Goodreads has no "date started" column of its
+                    own. Books on your <em>To-Read</em> shelf will have a blank Date Added.</li>
+                <li>Reviews are <strong>not</strong> accepted by Goodreads' CSV importer —
+                    only ratings, shelves, and dates come across.</li>
+            </ul>
+
+            <h3>Preview (<span id="export-count">0</span> books)</h3>
+            <table class="book-table compact" id="export-preview">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Shelf</th>
+                        <th>Rating</th>
+                    </tr>
+                </thead>
+                <tbody id="export-preview-tbody"></tbody>
+            </table>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- View: GUIDE (help + about + version)                            -->
+        <!-- ============================================================== -->
+        <section class="view" data-view="guide" hidden>
+            <div class="card">
+                <h2>How to use ShelfBridge</h2>
+                <p class="lead">
+                    A complete walkthrough of moving your library from Fable to
+                    Goodreads. Each section below corresponds to one of the
+                    three steps in the wizard.
+                </p>
+
+                <h3>Step 1 — Connect to Fable</h3>
+                <p>
+                    Click <strong>"Connect to Fable"</strong> on the welcome
+                    screen. If you have a Fable tab open already, we'll use
+                    that one — otherwise we'll open one for you. If you're not
+                    signed in to Fable yet, sign in there, then come back to
+                    this tab and click Connect again.
+                </p>
+                <p class="note">
+                    <strong>Privacy:</strong> ShelfBridge never sees your Fable
+                    password. You sign in on Fable's own page, in your normal
+                    browser session.
+                </p>
+
+                <h3>Step 2 — Review your library</h3>
+                <p>
+                    Anything you click in the table becomes editable. Changes
+                    save automatically — there's no "save" button. You can:
+                </p>
+                <ul class="explainer">
+                    <li><strong>Edit any cell</strong> — title, author, shelf, dates, rating, or ISBN.</li>
+                    <li><strong>Star ratings</strong> — click a star to set, click the same star again to clear.</li>
+                    <li><strong>Filter by shelf</strong> — pill buttons above the table.</li>
+                    <li><strong>Delete a row</strong> — small × at the end of each row.</li>
+                </ul>
+
+                <h4>What the "month only" badge means</h4>
+                <p>
+                    Fable only knew the month or year for some dates, not the
+                    exact day. We've defaulted the missing parts to "01" — you
+                    may want to correct the date manually. The badge disappears
+                    once you do.
+                </p>
+
+                <h3>Step 3 — Export &amp; import to Goodreads</h3>
+                <ol class="explainer">
+                    <li>Click <strong>Continue to export →</strong>, then <strong>Download Goodreads file</strong>.</li>
+                    <li>Open <a href="https://www.goodreads.com/review/import" target="_blank" rel="noopener">goodreads.com/review/import</a>.</li>
+                    <li>Upload the downloaded file. Wait a minute or two while Goodreads processes it.</li>
+                </ol>
+
+                <h3>Things to know about dates and ratings</h3>
+                <ul class="explainer">
+                    <li><strong>Date Read</strong> in Goodreads = your Fable <em>finish</em> date.</li>
+                    <li><strong>Date Added</strong> in Goodreads is mapped from your Fable <em>start</em> date — Goodreads' CSV format has no "date started reading" column.</li>
+                    <li>To-Read books have a blank Date Added; Goodreads fills in today's date on import.</li>
+                    <li>Reviews don't transfer. Ratings, shelves, and dates all come across.</li>
+                </ul>
+
+                <h3>Privacy</h3>
+                <p>
+                    Everything runs in your own browser. Your book data is
+                    stored locally via Chrome's extension storage — never sent
+                    to any server we run. The only external service is Fable's
+                    own API (<code>api.fable.co</code>), to read your shelves.
+                </p>
+            </div>
+
+            <div class="card" id="about">
+                <h2>About</h2>
+                <p class="version-line">
+                    <strong>ShelfBridge</strong> &nbsp; v<span id="version">1.0.0</span>
+                </p>
+                <p>
+                    Created by
+                    <a href="https://github.com/itchysudo" target="_blank" rel="noopener">itchysudo</a>.
+                    Released under the
+                    <a href="https://github.com/itchysudo/shelfbridge/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>.
+                </p>
+                <p>
+                    Source code:
+                    <a href="https://github.com/itchysudo/shelfbridge" target="_blank" rel="noopener">github.com/itchysudo/shelfbridge</a>
+                </p>
+
+                <h3>Need help or want to report a bug?</h3>
+                <p>
+                    Please
+                    <a href="https://github.com/itchysudo/shelfbridge/issues" target="_blank" rel="noopener">open an issue on GitHub</a>.
+                    Searching past issues first is often the quickest way to
+                    find an answer.
+                </p>
+
+                <div class="actions">
+                    <a href="#" id="back-from-guide" class="btn btn-link">← Back</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- View: ERROR (generic failure display)                           -->
+        <!-- ============================================================== -->
+        <section class="view card" data-view="error" hidden>
+            <h2>Something went wrong</h2>
+            <p class="lead" id="error-message">Please try again.</p>
+            <div class="actions">
+                <button id="retry-btn" class="btn btn-primary">Try again</button>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="site-footer">
+        <p>Runs entirely in your browser. Your Fable login is never stored.</p>
+    </footer>
+
+    <div id="saved-indicator" class="saved-indicator" aria-live="polite">Saved ✓</div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
