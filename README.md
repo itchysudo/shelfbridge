@@ -1,4 +1,6 @@
-# Fable → Goodreads
+# ShelfBridge
+
+*Fable → Goodreads, in a few clicks.*
 
 A small tool that moves your reading library from **Fable** (the social reading app, which has no export feature) to **Goodreads** (whose API was shut down in 2020, so you can't easily push things in either). Everything runs on your own computer — your data never leaves your machine, except for a one-time look-up against Open Library for book covers.
 
@@ -20,7 +22,7 @@ You don't need to know any code.
 
 1. On this page, click the green **Code** button → **Download ZIP**.
 2. Unzip the file (double-click it on Mac, right-click → Extract All on Windows).
-3. You'll get a folder called **fable-exporter** (or similar). Move it somewhere you'll remember — your Desktop is fine.
+3. You'll get a folder called **shelfbridge** (or similar). Move it somewhere you'll remember — your Desktop is fine.
 
 ---
 
@@ -31,7 +33,7 @@ This step installs the Python packages the tool needs and downloads a copy of Ch
 ### On Mac
 
 1. Open **Terminal** (press `⌘ + Space`, type "Terminal", hit Enter).
-2. Type `cd ` (with a space after `cd`) and then **drag the fable-exporter folder from Finder onto the Terminal window**. Hit Enter.
+2. Type `cd ` (with a space after `cd`) and then **drag the shelfbridge folder from Finder onto the Terminal window**. Hit Enter.
 3. Run:
    ```
    ./setup.sh
@@ -43,7 +45,7 @@ This step installs the Python packages the tool needs and downloads a copy of Ch
 
 ### On Windows
 
-1. Open the fable-exporter folder in File Explorer.
+1. Open the shelfbridge folder in File Explorer.
 2. Double-click **setup.bat**.
 3. If Windows shows a **"Windows protected your PC"** warning, click **More info** → **Run anyway**. (This warning appears for any program you download from the internet.)
 
@@ -55,14 +57,14 @@ When you see **"Setup complete!"**, you're done with this step. You never need t
 
 ### On Mac
 
-Double-click **start.command** in the fable-exporter folder.
+Double-click **start.command** in the shelfbridge folder.
 
 > First time only — Mac may say *"start.command cannot be opened because it is from an unidentified developer."*
 > Fix: in Finder, **right-click** start.command → **Open** → **Open**. After that one time, double-click works normally.
 
 ### On Windows
 
-Double-click **start.bat** in the fable-exporter folder.
+Double-click **start.bat** in the shelfbridge folder.
 
 A black Terminal window will appear (leave it open — that's the tool running) and your browser will open automatically to **http://localhost:5050**.
 
@@ -134,7 +136,7 @@ Click **More info** → **Run anyway**. Microsoft warns about any program you've
 Everything in this tool runs on your own computer.
 
 - Your **Fable password** is never seen or stored by this tool. You type it directly into Fable's website in the second browser window the tool opens.
-- Your **book data** lives in a single file called `books.db` inside the fable-exporter folder. Delete that file to wipe everything.
+- Your **book data** lives in a single file called `books.db` inside the shelfbridge folder. Delete that file to wipe everything.
 - The only external service the tool talks to is **Fable's own API** (api.fable.co), to read your book list. We don't send your data anywhere else.
 
 ---

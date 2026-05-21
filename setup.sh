@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Fable → Goodreads — one-time setup script (Mac / Linux).
+# ShelfBridge — one-time setup script (Mac / Linux).
 #
 # What this does:
 #   1. Finds a working Python 3.11+ on your machine.
@@ -17,8 +17,8 @@ set -e
 cd "$(dirname "$0")"
 
 echo ""
-echo "Fable → Goodreads — setup"
-echo "========================="
+echo "ShelfBridge — setup"
+echo "==================="
 echo ""
 
 # --- Find a usable Python --------------------------------------------------

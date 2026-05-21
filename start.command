@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Fable → Goodreads — Mac launcher.
+# ShelfBridge — Mac launcher (moves your library from Fable to Goodreads).
 #
 # Double-click this file in Finder to start the tool. Your default browser
 # will open automatically to the welcome screen.
@@ -24,7 +24,7 @@ if [ ! -f .venv/bin/python ]; then
     exit 1
 fi
 
-echo "Starting Fable → Goodreads..."
+echo "Starting ShelfBridge..."
 echo "Your browser should open to http://localhost:5050 in a moment."
 echo "When you're done, press Ctrl+C here to stop the tool."
 echo ""

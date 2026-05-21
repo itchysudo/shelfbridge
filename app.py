@@ -1,4 +1,4 @@
-"""Fable → Goodreads exporter — Flask web app.
+"""ShelfBridge — the Fable → Goodreads library exporter, as a small Flask app.
 
 This is the entry point. Run it with:
 

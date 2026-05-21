@@ -1,6 +1,6 @@
 @echo off
 REM
-REM Fable to Goodreads -- one-time setup script (Windows).
+REM ShelfBridge -- one-time setup script (Windows).
 REM
 REM What this does:
 REM   1. Verifies Python 3.11+ is installed.
@@ -17,8 +17,8 @@ setlocal
 cd /d "%~dp0"
 
 echo.
-echo Fable to Goodreads -- setup
-echo ===========================
+echo ShelfBridge -- setup
+echo ====================
 echo.
 
 REM --- Verify Python is installed --------------------------------------------

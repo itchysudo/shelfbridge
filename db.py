@@ -1,4 +1,4 @@
-"""SQLite helpers for the Fable → Goodreads exporter.
+"""SQLite helpers for ShelfBridge.
 
 One file, one table (`books`). We use Python's built-in `sqlite3` module so
 there's nothing extra to install — the database is just a single file on disk

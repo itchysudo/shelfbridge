@@ -1,6 +1,6 @@
 @echo off
 REM
-REM Fable to Goodreads -- Windows launcher.
+REM ShelfBridge -- Windows launcher (moves your library from Fable to Goodreads).
 REM
 REM Double-click this file in Explorer to start the tool. Your default
 REM browser will open automatically to the welcome screen.
@@ -21,7 +21,7 @@ if not exist .venv\Scripts\python.exe (
     exit /b 1
 )
 
-echo Starting Fable to Goodreads...
+echo Starting ShelfBridge...
 echo Your browser should open to http://localhost:5050 in a moment.
 echo When you're done, press Ctrl+C here to stop the tool.
 echo.

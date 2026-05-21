@@ -1,4 +1,4 @@
-// Fable → Goodreads — frontend JS.
+// ShelfBridge — frontend JS.
 //
 // Two pages have JS behaviour:
 //   - index.html      — the "Connect to Fable" button (placeholder for now).
