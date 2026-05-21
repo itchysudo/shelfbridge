@@ -1,0 +1,613 @@
+/* ===========================================================================
+   Fable → Goodreads stylesheet
+   ---------------------------------------------------------------------------
+   Calm, book-shop palette. One accent colour (teal). No fancy frameworks —
+   plain CSS with CSS custom properties so colours are easy to tweak in one
+   place.
+   =========================================================================== */
+
+:root {
+    --accent: #1f7a6f;            /* teal — primary buttons, step indicator */
+    --accent-dark: #155a52;       /* hover state */
+    --accent-soft: #d9ebe8;       /* tinted background — step indicator line */
+    --ink: #1f2a2e;               /* main text */
+    --muted: #6b7a80;             /* secondary text */
+    --hairline: #e1e6e8;          /* borders, dividers */
+    --bg: #fbfaf6;                /* page background — warm off-white */
+    --card-bg: #ffffff;
+    --shadow-sm: 0 1px 2px rgba(20, 30, 40, 0.04);
+    --shadow-md: 0 4px 14px rgba(20, 30, 40, 0.07);
+    --shadow-lift: 0 6px 18px rgba(20, 30, 40, 0.10);
+    --shelf-read-bg: #e7f3f1;
+    --shelf-reading-bg: #fff4dd;
+    --shelf-toread-bg: #ecebf7;
+
+    /* Friendly serif stack for headings. We use system fonts so the app
+       stays offline-capable. "Iowan Old Style" ships with macOS, "Palatino"
+       and "Georgia" cover Windows / Linux / older Macs. */
+    --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+                  "Times New Roman", serif;
+    --font-sans:  -apple-system, BlinkMacSystemFont, "Segoe UI",
+                  "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: var(--font-sans);
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+}
+
+/* All headings get the bookshop serif. */
+h1, h2, h3 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+
+/* ---------- Header ---------- */
+
+.site-header {
+    text-align: center;
+    padding: 2.5rem 1rem 0.5rem;
+}
+
+.site-title {
+    margin: 0;
+    font-size: 2.1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.site-title .header-icon {
+    width: 1.6em;
+    height: 1.6em;
+    color: var(--accent);
+    flex: 0 0 auto;
+}
+
+.site-title .arrow {
+    color: var(--accent);
+    margin: 0 0.2em;
+    font-family: var(--font-sans);   /* arrow renders crisper in a sans */
+}
+
+.tagline {
+    color: var(--muted);
+    margin: 0.4rem 0 0;
+    font-size: 1.05rem;
+    font-style: italic;
+}
+
+/* ---------- Step indicator ---------- */
+
+.steps {
+    max-width: 600px;
+    margin: 2rem auto 0;
+    padding: 0 1rem;
+}
+
+.steps ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0;
+}
+
+/* Each li lays out its own number + label + a trailing connector line that
+   reaches towards the next step. The last step has no trailing line. */
+.steps li {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+    position: relative;
+}
+
+.steps li:not(:last-child)::after {
+    content: "";
+    flex: 1;
+    height: 2px;
+    margin-left: 0.4rem;
+    background: var(--hairline);
+    border-radius: 2px;
+}
+
+/* When a step is already done, the connector line to the next step is also
+   filled to show progress. */
+.steps li.done:not(:last-child)::after {
+    background: var(--accent);
+}
+
+.steps .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: 2px solid var(--hairline);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.steps li.current .step-num {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    box-shadow: 0 0 0 4px var(--accent-soft);
+}
+.steps li.current { color: var(--ink); font-weight: 600; }
+
+.steps li.done .step-num {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+.steps li.done { color: var(--ink); }
+
+/* ---------- Container & card ---------- */
+
+.container {
+    max-width: 900px;
+    margin: 2rem auto 4rem;
+    padding: 0 1rem;
+}
+
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--hairline);
+    border-radius: 14px;
+    padding: 2.25rem 2.5rem;
+    box-shadow: var(--shadow-md);
+}
+
+.card h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.75rem;
+}
+
+.card h3 {
+    margin: 1.75rem 0 0.5rem;
+    font-size: 1.1rem;
+    color: var(--ink);
+}
+
+.lead {
+    color: var(--muted);
+    font-size: 1.05rem;
+    margin: 0 0 1.5rem;
+}
+
+.explainer {
+    padding-left: 1.25rem;
+}
+.explainer li {
+    margin-bottom: 0.4rem;
+}
+
+.summary {
+    color: var(--muted);
+    margin: 0 0 1rem;
+}
+
+.note, .reassure {
+    background: #f4f7f6;
+    border-left: 3px solid var(--accent);
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    margin-top: 1.25rem;
+    font-size: 0.95rem;
+    color: var(--muted);
+}
+
+/* ---------- Buttons ---------- */
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 1.5rem 0 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s ease, transform 0.12s ease,
+                box-shadow 0.18s ease;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: var(--shadow-sm);
+}
+.btn-primary:hover {
+    background: var(--accent-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lift);
+}
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+.btn-primary:disabled {
+    background: var(--muted);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-link {
+    background: transparent;
+    color: var(--accent);
+    padding-left: 0;
+    padding-right: 0;
+}
+.btn-link:hover { color: var(--accent-dark); }
+
+/* ---------- Book table ---------- */
+
+.book-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.book-table th,
+.book-table td {
+    text-align: left;
+    padding: 0.65rem 0.5rem;
+    border-bottom: 1px solid var(--hairline);
+    vertical-align: middle;
+}
+
+.book-table th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.book-table .isbn {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.book-table.compact th,
+.book-table.compact td {
+    padding: 0.4rem 0.5rem;
+}
+
+/* Coloured pill for the shelf column. */
+.shelf {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    text-transform: capitalize;
+}
+.shelf-read              { background: var(--shelf-read-bg); }
+.shelf-currently-reading { background: var(--shelf-reading-bg); }
+.shelf-to-read           { background: var(--shelf-toread-bg); }
+
+/* ---------- Filter bar (library page) ---------- */
+
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.5rem 0 1rem;
+}
+
+.filter-btn {
+    background: transparent;
+    border: 1px solid var(--hairline);
+    border-radius: 999px;
+    padding: 0.35rem 0.95rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+.filter-btn.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+/* ---------- Book covers (library + export tables) ---------- */
+
+.book-cover {
+    width: 38px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+    background: var(--hairline);
+    display: block;
+}
+
+/* Shown when a book has no cover_url or its image fails to load. */
+.book-cover-placeholder {
+    width: 38px;
+    height: 56px;
+    background: linear-gradient(135deg, #efe9dc 0%, #d8d0bd 100%);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(0,0,0,0.35);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.book-cover-placeholder svg {
+    width: 1.4rem;
+    height: 1.4rem;
+}
+
+.book-table .cover-cell {
+    width: 52px;
+    padding-right: 0.25rem;
+}
+
+/* ---------- Editable table cells ---------- */
+
+/* When the table is "editable", cells are mostly inputs. We strip their
+   native borders so the row reads as one continuous strip; the input only
+   shows its outline on focus. */
+.book-table.editable th,
+.book-table.editable td {
+    padding: 0.4rem 0.4rem;
+}
+
+.cell-input {
+    font: inherit;
+    color: inherit;
+    width: 100%;
+    padding: 0.4rem 0.5rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.cell-input:hover  { border-color: var(--hairline); }
+.cell-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: white;
+}
+
+.isbn-input {
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+}
+
+/* Make the date column compact — date inputs default to ugly wide widths. */
+.book-table.editable input[type="date"] {
+    min-width: 8.5rem;
+}
+
+/* ---------- Star rating ---------- */
+
+.stars {
+    display: inline-flex;
+    gap: 0.05rem;
+}
+
+.star {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.1rem 0.15rem;
+    font-size: 1.15rem;
+    line-height: 1;
+    color: var(--hairline);
+    transition: color 0.1s ease, transform 0.1s ease;
+}
+.star:hover { transform: scale(1.15); }
+
+/* Light up the stars up to and including the current rating value.
+   We rely on the parent's data-value to know how many to fill. */
+.stars[data-value="1"] .star[data-value="1"],
+.stars[data-value="2"] .star[data-value="1"],
+.stars[data-value="2"] .star[data-value="2"],
+.stars[data-value="3"] .star[data-value="1"],
+.stars[data-value="3"] .star[data-value="2"],
+.stars[data-value="3"] .star[data-value="3"],
+.stars[data-value="4"] .star[data-value="1"],
+.stars[data-value="4"] .star[data-value="2"],
+.stars[data-value="4"] .star[data-value="3"],
+.stars[data-value="4"] .star[data-value="4"],
+.stars[data-value="5"] .star[data-value="1"],
+.stars[data-value="5"] .star[data-value="2"],
+.stars[data-value="5"] .star[data-value="3"],
+.stars[data-value="5"] .star[data-value="4"],
+.stars[data-value="5"] .star[data-value="5"] {
+    color: #e0a106;  /* warm gold */
+}
+
+/* ---------- Delete button ---------- */
+
+.delete-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    font-size: 1.2rem;
+    line-height: 1;
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.delete-btn:hover {
+    background: #fbecec;
+    color: #b13030;
+    border-color: #f3d6d6;
+}
+
+/* ---------- Saved indicator ---------- */
+
+.saved-indicator {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--accent);
+    color: white;
+    padding: 0.55rem 1rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.saved-indicator.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ---------- Connect flow states (index page) ---------- */
+
+/* The card cycles through multiple .connect-state panels; the [hidden]
+   attribute does the visibility work, JS toggles it. We just make sure each
+   panel takes up at least a bit of space so the layout doesn't jump. */
+.connect-state {
+    min-height: 12rem;
+}
+
+.dev-note {
+    margin-top: 2rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    border-top: 1px dashed var(--hairline);
+    padding-top: 1rem;
+}
+.dev-note a {
+    color: var(--muted);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+.dev-hint {
+    display: block;
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+}
+.dev-hint code {
+    background: var(--hairline);
+    padding: 0.05rem 0.3rem;
+    border-radius: 3px;
+}
+
+.muted {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+/* ---------- Spinner (browser opening) ---------- */
+
+.spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid var(--hairline);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 1.5rem 0;
+    animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---------- Paste-URLs fallback ---------- */
+
+.urls-input {
+    width: 100%;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.85rem;
+    padding: 0.75rem;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    resize: vertical;
+}
+.urls-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* ---------- Date precision badge ---------- */
+
+.precision-badge {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.45rem;
+    border-radius: 4px;
+    background: #fff4dd;
+    color: #8a6500;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    cursor: help;
+    vertical-align: middle;
+}
+
+/* ---------- Indeterminate progress bar ---------- */
+
+.progress-bar {
+    width: 100%;
+    height: 0.5rem;
+    background: var(--hairline);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 1.25rem 0 0.75rem;
+}
+
+.progress-bar-fill {
+    width: 40%;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 999px;
+    /* "Indeterminate" effect — a bar that slides back and forth. We don't
+       know the total work in Phase 3a, so we show movement rather than a
+       percentage. Phase 3b can switch this to a determinate bar. */
+    animation: slide 1.4s ease-in-out infinite;
+}
+
+@keyframes slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(250%); }
+}
+
+/* ---------- Footer ---------- */
+
+.site-footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 1rem;
+}

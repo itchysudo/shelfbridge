@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% set step = 2 %}
+{% block title %}Review your library — Fable → Goodreads{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h2>Your library</h2>
+    <p class="lead">
+        Tidy up the list below before exporting. Click any cell to edit —
+        your changes save automatically.
+    </p>
+
+    <p class="note">
+        <strong>About the "Started" column:</strong> Goodreads doesn't have a
+        "date started reading" field in its CSV import. We use Fable's start
+        date as Goodreads' <em>Date Added</em> instead — it's the closest
+        signal we have to when each book entered your library.
+    </p>
+
+    {# Shelf filter — JS attaches a click handler that hides non-matching rows. #}
+    <div class="filter-bar" role="tablist" aria-label="Filter by shelf">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="read">Read</button>
+        <button class="filter-btn" data-filter="currently-reading">Reading</button>
+        <button class="filter-btn" data-filter="to-read">Want to read</button>
+    </div>
+
+    {# Updated dynamically by JS after edits or deletes. #}
+    <p class="summary" id="summary">…</p>
+
+    {% if books %}
+    <table class="book-table editable">
+        <thead>
+            <tr>
+                <th class="cover-cell" aria-label="Cover"></th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Shelf</th>
+                <th>Started</th>
+                <th>Finished</th>
+                <th>Rating</th>
+                <th>ISBN</th>
+                <th aria-label="Actions"></th>
+            </tr>
+        </thead>
+        <tbody id="book-tbody">
+            {% for book in books %}
+            <tr data-book-id="{{ book.id }}" data-shelf="{{ book.shelf }}">
+                <td class="cover-cell">
+                    {% if book.cover_url %}
+                        {# If the cover URL ever 404s, JS in app.js swaps the
+                           <img> for a placeholder SVG so the row still looks
+                           clean. #}
+                        <img class="book-cover" src="{{ book.cover_url }}"
+                             alt="" loading="lazy"
+                             onerror="this.outerHTML='<span class=&quot;book-cover-placeholder&quot;><svg viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.5&quot;><path d=&quot;M4 4h14a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V4z&quot;/><path d=&quot;M4 4v14a2 2 0 0 0 2 2h14&quot;/></svg></span>'">
+                    {% else %}
+                        <span class="book-cover-placeholder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M4 4h14a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V4z"/>
+                                <path d="M4 4v14a2 2 0 0 0 2 2h14"/>
+                            </svg>
+                        </span>
+                    {% endif %}
+                </td>
+                <td>
+                    <input type="text" class="cell-input" data-field="title"
+                           value="{{ book.title }}">
+                </td>
+                <td>
+                    <input type="text" class="cell-input" data-field="author"
+                           value="{{ book.author or '' }}">
+                </td>
+                <td>
+                    <select class="cell-input" data-field="shelf">
+                        <option value="read"
+                            {% if book.shelf == 'read' %}selected{% endif %}>Read</option>
+                        <option value="currently-reading"
+                            {% if book.shelf == 'currently-reading' %}selected{% endif %}>Reading</option>
+                        <option value="to-read"
+                            {% if book.shelf == 'to-read' %}selected{% endif %}>Want to read</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="date" class="cell-input" data-field="date_started"
+                           value="{{ book.date_started or '' }}">
+                    {% if book.date_started_type == 'month' %}
+                        <span class="precision-badge" title="Fable only had the month — day defaulted to 01">month only</span>
+                    {% elif book.date_started_type == 'year' %}
+                        <span class="precision-badge" title="Fable only had the year — month and day defaulted to 01">year only</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <input type="date" class="cell-input" data-field="date_finished"
+                           value="{{ book.date_finished or '' }}">
+                    {# Show a small badge when Fable only knew the month or year —
+                       the date in the input has had the missing parts defaulted to
+                       01 so the user knows to double-check it. #}
+                    {% if book.date_finished_type == 'month' %}
+                        <span class="precision-badge" title="Fable only had the month — day defaulted to 01">month only</span>
+                    {% elif book.date_finished_type == 'year' %}
+                        <span class="precision-badge" title="Fable only had the year — month and day defaulted to 01">year only</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {# Star buttons. CSS lights up the filled state based on
+                       data-value on the parent. Clicking star N sets rating to N;
+                       clicking the same star again clears the rating. #}
+                    <div class="stars" data-field="rating"
+                         data-value="{{ book.rating or 0 }}">
+                        {% for n in range(1, 6) %}
+                        <button type="button" class="star" data-value="{{ n }}"
+                                aria-label="Rate {{ n }} {% if n == 1 %}star{% else %}stars{% endif %}">★</button>
+                        {% endfor %}
+                    </div>
+                </td>
+                <td>
+                    <input type="text" class="cell-input isbn-input"
+                           data-field="isbn" value="{{ book.isbn or '' }}"
+                           placeholder="—">
+                </td>
+                <td>
+                    <button type="button" class="delete-btn"
+                            aria-label="Delete this book">×</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No books yet. Go back to step 1 and connect to Fable.</p>
+    {% endif %}
+
+    <div class="actions">
+        <a href="{{ url_for('export') }}" class="btn btn-primary">Continue to export →</a>
+        <a href="{{ url_for('index') }}" class="btn btn-link">← Back</a>
+    </div>
+</section>
+
+{# Floating "Saved" pip in the corner — JS toggles .visible briefly after each save. #}
+<div id="saved-indicator" class="saved-indicator" aria-live="polite">Saved ✓</div>
+{% endblock %}

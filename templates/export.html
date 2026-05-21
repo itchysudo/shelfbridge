@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% set step = 3 %}
+{% block title %}Export — Fable → Goodreads{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h2>Download &amp; import</h2>
+    <p class="lead">
+        Almost done. Download the file below, then upload it to Goodreads
+        using the steps shown.
+    </p>
+
+    <div class="actions">
+        <a href="{{ url_for('export_csv') }}" class="btn btn-primary">Download Goodreads file</a>
+        <a href="{{ url_for('library') }}" class="btn btn-link">← Back to library</a>
+    </div>
+
+    <h3>How to import into Goodreads</h3>
+    <ol class="explainer">
+        <li>Open <a href="https://www.goodreads.com/review/import" target="_blank" rel="noopener">goodreads.com/review/import</a> in a new tab.</li>
+        <li>Click <em>Choose File</em> and pick the file you just downloaded.</li>
+        <li>Click <em>Import books</em> and wait a minute or two.</li>
+    </ol>
+
+    <p class="note">
+        <strong>A couple of things to know about the dates:</strong>
+    </p>
+    <ul class="explainer">
+        <li><strong>Date Read</strong> in Goodreads = your Fable <em>finish</em> date.</li>
+        <li><strong>Date Added</strong> in Goodreads is mapped from your Fable
+            <em>start</em> date — Goodreads doesn't have a "date started"
+            column of its own, and the start date is the best historical
+            signal we have for when a book entered your library.
+            Books you haven't started yet (on your <em>To-Read</em> shelf)
+            will have a blank Date Added, and Goodreads will fill that in
+            with today's date on import.</li>
+        <li>Reviews are <strong>not</strong> accepted by Goodreads' CSV
+            importer — only ratings, shelves, and dates come across.</li>
+    </ul>
+
+    <h3>Preview ({{ books | length }} books)</h3>
+    <table class="book-table compact">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Shelf</th>
+                <th>Rating</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for book in books %}
+            <tr>
+                <td>{{ book.title }}</td>
+                <td>{{ book.author or "—" }}</td>
+                <td>{{ book.shelf }}</td>
+                <td>{{ book.rating or "" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endblock %}

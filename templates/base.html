@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Fable → Goodreads{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <h1 class="site-title">
+            {# Open-book glyph — feather-icons "book-open". Inline SVG so the
+               icon inherits the title colour and stays crisp at any size. #}
+            <svg class="header-icon" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+            Fable <span class="arrow">→</span> Goodreads
+        </h1>
+        <p class="tagline">Move your reading library, one click at a time.</p>
+    </header>
+
+    {# Three-step progress indicator. Each page sets `step` to 1, 2, or 3. #}
+    <nav class="steps" aria-label="Progress">
+        <ol>
+            <li class="{% if step == 1 %}current{% elif step > 1 %}done{% endif %}">
+                <span class="step-num">1</span>
+                <span class="step-label">Connect</span>
+            </li>
+            <li class="{% if step == 2 %}current{% elif step > 2 %}done{% endif %}">
+                <span class="step-num">2</span>
+                <span class="step-label">Review</span>
+            </li>
+            <li class="{% if step == 3 %}current{% endif %}">
+                <span class="step-num">3</span>
+                <span class="step-label">Export</span>
+            </li>
+        </ol>
+    </nav>
+
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <p>Runs entirely on your computer. Your Fable login is never stored.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

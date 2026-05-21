@@ -1,0 +1,19 @@
+# Python virtual environment
+.venv/
+
+# SQLite database — created at runtime, not committed
+books.db
+
+# Python caches
+__pycache__/
+*.pyc
+
+# macOS metadata
+.DS_Store
+
+# Discovery-mode HTML dumps — local debugging only
+_discovery/
+
+# Local-only reference files (not generated or used by the tool)
+sample_export.csv
+*.gdoc
