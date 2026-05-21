@@ -80,13 +80,19 @@ async function isLoggedIn(tabId) {
 // ---------------------------------------------------------------------------
 
 async function fetchAllBooks(tabId) {
-    const [{ result }] = await chrome.scripting.executeScript({
+    const results = await chrome.scripting.executeScript({
         target: { tabId },
         world:  "MAIN",
         // Note: this function executes in the page context — it cannot
         // close over anything from this module. Anything it needs has to
         // arrive via the `args` array.
+        //
+        // We wrap the whole body in try/catch and return a structured
+        // result, because chrome.scripting silently turns any thrown
+        // exception into `result: null` — we'd otherwise lose the real
+        // error and only see "cannot read properties of null" downstream.
         func: async (SHELF_MAP) => {
+            try {
             // ----- Helpers (defined inline; closures don't survive serialisation) -----
 
             function getToken() {
@@ -166,7 +172,17 @@ async function fetchAllBooks(tabId) {
 
             // ----- The actual flow -----
             const token = getToken();
-            if (!token) throw new Error("Not logged in to Fable.");
+            if (!token) {
+                // List the keys we did find, to help diagnose if Fable
+                // ever changes the localStorage layout.
+                const allKeys = Object.keys(localStorage);
+                const firebaseKeys = allKeys.filter((k) => k.toLowerCase().includes("firebase"));
+                throw new Error(
+                    "Couldn't find a Firebase auth token in fable.co's localStorage. " +
+                    `Found ${allKeys.length} keys total, ${firebaseKeys.length} firebase-related ` +
+                    `(${firebaseKeys.slice(0, 3).join(", ")}).`,
+                );
+            }
 
             const profile = await api(
                 "https://api.fable.co/api/settings/profile/", token);
@@ -200,11 +216,33 @@ async function fetchAllBooks(tabId) {
                 }
             }
 
-            return allBooks;
+            return { ok: true, books: allBooks };
+            } catch (e) {
+                return {
+                    ok: false,
+                    error: (e && e.message) ? e.message : String(e),
+                    stack: e?.stack || null,
+                };
+            }
         },
         args: [SHELF_MAP],
     });
-    return result;
+
+    // Defensive: chrome.scripting returns one InjectionResult per frame.
+    // We targeted just the tab, so there's normally exactly one. Treat any
+    // missing/null result as a hard failure so we don't crash downstream.
+    if (!results || results.length === 0) {
+        throw new Error("Chrome didn't run the scraper in the Fable tab — try reloading the tab and clicking Connect again.");
+    }
+    const payload = results[0].result;
+    if (!payload) {
+        const injectionError = results[0].error?.message || "(no detail)";
+        throw new Error("Scraper script crashed in the Fable tab: " + injectionError);
+    }
+    if (!payload.ok) {
+        throw new Error(payload.error || "Scraper failed for an unknown reason.");
+    }
+    return payload.books;
 }
 
 
