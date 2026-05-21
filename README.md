@@ -161,3 +161,9 @@ FLASK_DEBUG=1 .venv/bin/python app.py
 ```
 
 PRs welcome.
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE). Do what you like with the code; just keep the copyright notice if you redistribute it.
