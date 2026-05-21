@@ -109,7 +109,12 @@ async function fetchAllBooks(tabId) {
             }
 
             async function api(url, token) {
+                // credentials: "include" sends fable.co's cookies on this
+                // cross-origin call to api.fable.co — the SPA's own client
+                // likely does too, and the API may rely on a session cookie
+                // alongside the Bearer JWT.
                 const r = await fetch(url, {
+                    credentials: "include",
                     headers: {
                         Authorization: "Bearer " + token,
                         Accept: "application/json",
