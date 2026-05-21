@@ -75,11 +75,32 @@ async function isLoggedIn(tabId) {
 
 
 // ---------------------------------------------------------------------------
-// The big one — runs entirely inside the fable.co tab and returns books
-// already mapped to our schema.
+// Header capture — trigger SPA activity so the background service worker
+// can observe and remember the request headers Fable's own client uses.
 // ---------------------------------------------------------------------------
 
-async function fetchAllBooks(tabId) {
+async function captureHeaders(tabId) {
+    // Drop any stale capture from a previous run.
+    await chrome.runtime.sendMessage({ type: "clearCapturedHeaders" });
+
+    // Reload the tab on a URL we know the SPA hits the API from. This
+    // forces a fresh batch of requests we can listen to.
+    await chrome.tabs.update(tabId, { url: "https://fable.co/store/profile" });
+    await waitForTabComplete(tabId);
+    // Give the SPA a couple of seconds after load to actually fire its calls.
+    await new Promise((r) => setTimeout(r, 3000));
+
+    const response = await chrome.runtime.sendMessage({ type: "getCapturedHeaders" });
+    return (response && response.headers) || null;
+}
+
+
+// ---------------------------------------------------------------------------
+// The big one — runs entirely inside the fable.co tab and returns books
+// already mapped to our schema, using the headers we snooped from the SPA.
+// ---------------------------------------------------------------------------
+
+async function fetchAllBooks(tabId, capturedHeaders) {
     const results = await chrome.scripting.executeScript({
         target: { tabId },
         world:  "MAIN",
@@ -91,35 +112,32 @@ async function fetchAllBooks(tabId) {
         // result, because chrome.scripting silently turns any thrown
         // exception into `result: null` — we'd otherwise lose the real
         // error and only see "cannot read properties of null" downstream.
-        func: async (SHELF_MAP) => {
+        func: async (SHELF_MAP, capturedHeaders) => {
             try {
             // ----- Helpers (defined inline; closures don't survive serialisation) -----
 
-            function getToken() {
-                for (const key of Object.keys(localStorage)) {
-                    if (!key.startsWith("firebase:authUser")) continue;
-                    try {
-                        const data = JSON.parse(localStorage.getItem(key));
-                        if (data?.stsTokenManager?.accessToken) {
-                            return data.stsTokenManager.accessToken;
-                        }
-                    } catch (e) {}
-                }
-                return null;
+            // Build the header set we replay on our own API calls. Drop
+            // headers the browser controls (it'll set them automatically
+            // and reject manual overrides), keep auth and any X-* customs.
+            const FORBIDDEN_HEADERS = new Set([
+                "host", "cookie", "content-length", "connection",
+                "accept-encoding", "origin", "referer",
+            ]);
+            const replayHeaders = { Accept: "application/json" };
+            for (const [name, value] of Object.entries(capturedHeaders || {})) {
+                if (FORBIDDEN_HEADERS.has(name.toLowerCase())) continue;
+                replayHeaders[name] = value;
+            }
+            if (!Object.keys(replayHeaders).some((k) => k.toLowerCase() === "authorization")) {
+                throw new Error(
+                    "No Authorization header was captured from Fable. The page " +
+                    "may not have fired an authenticated API call — try reloading " +
+                    "the Fable tab and clicking Connect again.",
+                );
             }
 
-            async function api(url, token) {
-                // credentials: "include" sends fable.co's cookies on this
-                // cross-origin call to api.fable.co — the SPA's own client
-                // likely does too, and the API may rely on a session cookie
-                // alongside the Bearer JWT.
-                const r = await fetch(url, {
-                    credentials: "include",
-                    headers: {
-                        Authorization: "Bearer " + token,
-                        Accept: "application/json",
-                    },
-                });
+            async function api(url) {
+                const r = await fetch(url, { headers: replayHeaders });
                 if (!r.ok) throw new Error("HTTP " + r.status + " from " + url);
                 return r.json();
             }
@@ -176,27 +194,15 @@ async function fetchAllBooks(tabId) {
             }
 
             // ----- The actual flow -----
-            const token = getToken();
-            if (!token) {
-                // List the keys we did find, to help diagnose if Fable
-                // ever changes the localStorage layout.
-                const allKeys = Object.keys(localStorage);
-                const firebaseKeys = allKeys.filter((k) => k.toLowerCase().includes("firebase"));
-                throw new Error(
-                    "Couldn't find a Firebase auth token in fable.co's localStorage. " +
-                    `Found ${allKeys.length} keys total, ${firebaseKeys.length} firebase-related ` +
-                    `(${firebaseKeys.slice(0, 3).join(", ")}).`,
-                );
-            }
-
+            // Auth is handled by replaying the captured headers — no token
+            // extraction needed in the scrape step.
             const profile = await api(
-                "https://api.fable.co/api/settings/profile/", token);
+                "https://api.fable.co/api/settings/profile/");
             const userId = profile?.id;
             if (!userId) throw new Error("Couldn't read user id from profile.");
 
             const listsResp = await api(
-                `https://api.fable.co/api/v2/users/${userId}/book_lists/`,
-                token);
+                `https://api.fable.co/api/v2/users/${userId}/book_lists/`);
             const lists = Array.isArray(listsResp)
                 ? listsResp
                 : (listsResp.results || []);
@@ -212,7 +218,7 @@ async function fetchAllBooks(tabId) {
                 const shelf = SHELF_MAP[list.system_type] || "to-read";
                 let url = `https://api.fable.co/api/v2/users/${userId}/book_lists/${list.id}/books?limit=100`;
                 while (url) {
-                    const page = await api(url, token);
+                    const page = await api(url);
                     for (const entry of (page.results || [])) {
                         const mapped = mapEntry(entry, shelf);
                         if (mapped) allBooks.push(mapped);
@@ -230,7 +236,7 @@ async function fetchAllBooks(tabId) {
                 };
             }
         },
-        args: [SHELF_MAP],
+        args: [SHELF_MAP, capturedHeaders],
     });
 
     // Defensive: chrome.scripting returns one InjectionResult per frame.
@@ -284,8 +290,22 @@ export async function runScrape(progressCb) {
         };
     }
 
+    // Trigger SPA activity so the background service worker can snoop the
+    // Authorization (and any X-Firebase-AppCheck) headers Fable's own
+    // client sends. This is the only reliable way to get the full set of
+    // headers the API expects — we can't recreate App Check tokens.
+    progressCb?.({ status: "scraping", message: "Capturing Fable's auth headers…" });
+    const headers = await captureHeaders(tabId);
+    if (!headers || !Object.keys(headers).some((k) => k.toLowerCase() === "authorization")) {
+        throw new Error(
+            "Couldn't capture Fable's request headers — the Fable tab didn't " +
+            "fire any authenticated API calls. Try signing out of Fable, " +
+            "signing back in, then clicking Connect again.",
+        );
+    }
+
     progressCb?.({ status: "scraping", message: "Reading your library…" });
-    const books = await fetchAllBooks(tabId);
+    const books = await fetchAllBooks(tabId, headers);
     progressCb?.({ status: "done", count: books.length });
     return books;
 }
