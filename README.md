@@ -1,171 +1,157 @@
 # ShelfBridge
 
-*Fable → Goodreads, in a few clicks.*
+*Fable to Goodreads, in a few clicks.*
 
-A small tool that moves your reading library from **Fable** (the social reading app, which has no export feature) to **Goodreads** (whose API was shut down in 2020, so you can't easily push things in either). Everything runs on your own computer — your data never leaves your machine, except for a one-time look-up against Open Library for book covers.
+ShelfBridge gets your reading library out of Fable and into Goodreads. Fable doesn't have an export feature and Goodreads turned off their public API in 2020, so this little gap has been sitting there annoying me for a while. This is my way of bridging it. The tool runs locally on your computer and nothing about your library is sent anywhere on the way through.
 
 ---
 
 ## What you'll need
 
-- A computer running **macOS, Windows, or Linux**.
-- **Python 3.11 or newer** installed. If you don't have it, get it from <https://www.python.org/downloads/>.
-  *On Windows, tick the box that says **"Add Python to PATH"** during install.*
-- A **Fable** account — the one whose library you want to move.
-- A **Goodreads** account — where the books will end up.
+- A Mac, Windows or Linux machine.
+- Python 3.11 or newer installed. If you don't already have it, grab it from <https://www.python.org/downloads/>. Windows users: make sure you tick the "Add Python to PATH" box during the installer.
+- A Fable account (the one whose library you want to export).
+- A Goodreads account (where the books are heading).
 
-You don't need to know any code.
+You don't need to know how to code.
 
 ---
 
 ## Step 1 — Download the tool
 
-1. On this page, click the green **Code** button → **Download ZIP**.
-2. Unzip the file (double-click it on Mac, right-click → Extract All on Windows).
-3. You'll get a folder called **shelfbridge** (or similar). Move it somewhere you'll remember — your Desktop is fine.
+1. Click the green **Code** button at the top of the GitHub page and pick **Download ZIP**.
+2. Unzip the file. Double-click on Mac, right-click and "Extract All" on Windows.
+3. You'll end up with a folder called `shelfbridge` (or something close). Drop it somewhere you'll find it again — your Desktop is fine.
 
 ---
 
-## Step 2 — Set it up (you only do this once)
+## Step 2 — One-time setup
 
-This step installs the Python packages the tool needs and downloads a copy of Chromium (~150 MB) for it to use under the hood. It takes a couple of minutes.
+This step installs the bits the tool needs, plus a copy of Chromium for it to drive in the background. It's about 150 MB to download, so give it a minute or two.
 
-### On Mac
+### Mac
 
-1. Open **Terminal** (press `⌘ + Space`, type "Terminal", hit Enter).
-2. Type `cd ` (with a space after `cd`) and then **drag the shelfbridge folder from Finder onto the Terminal window**. Hit Enter.
+1. Open Terminal (Cmd+Space, type "Terminal", hit Enter).
+2. Type `cd ` (note the space) and then drag the shelfbridge folder from Finder onto the Terminal window. Press Enter.
 3. Run:
    ```
    ./setup.sh
    ```
-   If you get a "permission denied" message, run this once to fix it, then try again:
+   If you see "permission denied", fix it with:
    ```
    chmod +x setup.sh start.command
    ```
+   then try again.
 
-### On Windows
+### Windows
 
 1. Open the shelfbridge folder in File Explorer.
-2. Double-click **setup.bat**.
-3. If Windows shows a **"Windows protected your PC"** warning, click **More info** → **Run anyway**. (This warning appears for any program you download from the internet.)
+2. Double-click `setup.bat`.
+3. If Windows pops up with "Windows protected your PC", click **More info** then **Run anyway**. That warning shows up for anything downloaded off the internet — it's not a problem with the tool.
 
-When you see **"Setup complete!"**, you're done with this step. You never need to do it again.
+Once you see "Setup complete!" you're done with this step forever.
 
 ---
 
 ## Step 3 — Run the tool
 
-### On Mac
+### Mac
 
-Double-click **start.command** in the shelfbridge folder.
+Double-click `start.command`. The first time you do this, Mac may complain that the file is from an unidentified developer. Right-click it, pick **Open**, then **Open** again. You only have to do that the once — from then on a normal double-click works.
 
-> First time only — Mac may say *"start.command cannot be opened because it is from an unidentified developer."*
-> Fix: in Finder, **right-click** start.command → **Open** → **Open**. After that one time, double-click works normally.
+### Windows
 
-### On Windows
+Double-click `start.bat`.
 
-Double-click **start.bat** in the shelfbridge folder.
+Either way, a small terminal window appears (leave it open, that's the tool running) and your browser opens automatically at <http://localhost:5050>.
 
-A black Terminal window will appear (leave it open — that's the tool running) and your browser will open automatically to **http://localhost:5050**.
-
-To stop the tool when you're done, close the Terminal window or press **Ctrl+C** inside it.
+When you're done, close the terminal window or hit Ctrl+C inside it to stop the tool.
 
 ---
 
 ## Step 4 — Use the tool
 
-You'll see a 3-step wizard:
+There's a three-step wizard in the browser:
 
-1. **Connect to Fable** — Click the big "Connect to Fable" button.
-   - A second browser window will pop open showing Fable's login page.
-   - Log in as you normally would on the Fable website.
-   - When you're logged in, come back to the first browser window (the tool) and click **"I'm logged in"**.
-   - The tool will read all the books on your Fable shelves. This usually takes 10–60 seconds.
-
-2. **Review your library** — A table of your books appears. Take a moment to:
-   - Check the titles, authors, dates and ISBNs look right.
-   - Add ratings if you want (you click the stars).
-   - Delete anything you don't want to move across.
-   - Edit anything by clicking on it — changes save automatically.
-
-3. **Download & import** — Click **"Download Goodreads file"**. You'll get a file called `goodreads_import.csv`.
+1. **Connect to Fable.** Click the Connect button. A second browser window will pop up on Fable's login page — sign in there as you normally would. Once you're in, come back to the first window and click "I'm logged in". The tool reads your shelves, which usually takes between ten and sixty seconds.
+2. **Review your library.** A table of every book appears. Have a quick scroll through to check the titles, authors, dates and ISBNs look right. You can click any cell to edit it, click the stars to add ratings, and use the small × on each row to drop a book you don't want to migrate. Everything saves as you go.
+3. **Download.** Hit "Download Goodreads file" and you'll get `goodreads_import.csv`.
 
 ---
 
 ## Step 5 — Import into Goodreads
 
-1. Go to <https://www.goodreads.com/review/import> (you may need to log in).
-2. Click **Choose File** and pick the `goodreads_import.csv` you just downloaded.
-3. Click **Import books**. Wait a minute or two while Goodreads processes them.
-4. Your books should now appear in your Goodreads library, on the right shelves, with the right dates.
+1. Head to <https://www.goodreads.com/review/import> (sign in if you need to).
+2. Pick "Choose File" and select the CSV you just downloaded.
+3. Hit "Import books" and give it a minute.
+4. Your library should now be on Goodreads, on the right shelves, with the right dates.
 
-A few things to know:
-- **Reviews don't transfer** — Goodreads' importer doesn't accept them via CSV. Ratings, shelves, and dates all transfer fine.
-- **"Date Added"** in Goodreads is mapped from your Fable **start** date (the day you began reading the book). Goodreads doesn't have a separate "started" field, so this is the best fit.
-- Books you haven't started yet (To-Read shelf) will have a blank Date Added — Goodreads will fill that in with today's date.
+Two things worth knowing up front:
+
+- **Reviews don't come across.** Goodreads' importer drops the review column on the floor — that's their limitation, not the tool's. Everything else (ratings, shelves, dates) lands cleanly.
+- **"Date Added" in Goodreads = your Fable start date.** Goodreads' CSV format doesn't have a "date started" column of its own, so I've put your Fable start date there instead — it's the closest equivalent. Books on your To-Read shelf will have a blank Date Added, which Goodreads fills in with today's date on import.
 
 ---
 
 ## Troubleshooting
 
-### "Couldn't find Python 3.11 or newer" during setup
-Install Python from <https://www.python.org/downloads/>, then re-run setup. On Windows, **tick the "Add Python to PATH" box** during install.
+**"Couldn't find Python 3.11 or newer"**
+Install Python from <https://www.python.org/downloads/> and re-run setup. On Windows, tick the "Add Python to PATH" box during install.
 
-### Setup gets stuck on "Downloading Chromium"
-That step downloads about 150 MB and can take a few minutes on slow connections. Give it up to 10 minutes before assuming it's stuck.
+**Setup gets stuck on "Downloading Chromium"**
+That step pulls down about 150 MB so give it up to ten minutes on a slow connection before assuming it's hung.
 
-### The tool opens but says "couldn't capture Fable's auth headers"
-You probably weren't fully logged in to Fable when you clicked "I'm logged in". Log out of Fable, refresh the tool, and try again.
+**The tool says "couldn't capture Fable's auth headers"**
+You probably hadn't finished logging in when you clicked "I'm logged in". Log out of Fable, refresh the tool and walk through Connect again.
 
-### My browser doesn't open automatically
+**The browser doesn't open automatically**
 Open it yourself and go to <http://localhost:5050>.
 
-### "Port 5050 already in use"
-Another copy of the tool is probably still running in another Terminal window. Close that window first.
+**"Port 5050 already in use"**
+Another copy of the tool is still running in a terminal window somewhere. Close that one and try again.
 
-### Mac: "start.command cannot be opened because it is from an unidentified developer"
-**Right-click** start.command → **Open** → **Open**. You only need to do this the very first time.
+**Mac: "start.command cannot be opened because it is from an unidentified developer"**
+Right-click `start.command`, pick **Open**, then **Open** again. You only have to do that once.
 
-### Windows: "Windows protected your PC"
-Click **More info** → **Run anyway**. Microsoft warns about any program you've downloaded — there's nothing actually wrong.
+**Windows: "Windows protected your PC"**
+Click **More info** then **Run anyway**.
 
 ---
 
 ## Privacy
 
-Everything in this tool runs on your own computer.
-
-- Your **Fable password** is never seen or stored by this tool. You type it directly into Fable's website in the second browser window the tool opens.
-- Your **book data** lives in a single file called `books.db` inside the shelfbridge folder. Delete that file to wipe everything.
-- The only external service the tool talks to is **Fable's own API** (api.fable.co), to read your book list. We don't send your data anywhere else.
+Everything happens on your computer. Your Fable password isn't seen or stored by the tool — you sign in on Fable's own site in the second browser window. Your book data lives in a single file (`books.db`) inside the shelfbridge folder; delete that file to wipe it. The only place the tool talks to outside your machine is Fable's own API at `api.fable.co`, to read your shelves.
 
 ---
 
 ## For developers
 
-The tool is a small Flask app. Folder layout:
+It's a small Flask app:
 
-| File | What it is |
+| File | What it does |
 |---|---|
 | `app.py` | Flask app and HTTP routes |
 | `db.py` | SQLite helpers |
-| `scraper.py` | Playwright-based Fable scraper (runs on a background thread) |
+| `scraper.py` | Playwright-based Fable scraper, runs on a background thread |
 | `transformer.py` | Goodreads CSV generator |
-| `templates/` | Jinja2 page templates |
+| `templates/` | Jinja2 templates |
 | `static/` | CSS and frontend JS |
 | `requirements.txt` | Python deps |
 | `setup.sh` / `setup.bat` | One-time installer scripts |
 | `start.command` / `start.bat` | Double-clickable launchers |
 
-To get hot-reload + the Werkzeug debugger during development:
+For hot-reload and the Werkzeug debugger during development:
+
 ```bash
 FLASK_DEBUG=1 .venv/bin/python app.py
 ```
+
+There's also a Chrome extension version under [`extension/`](extension/) that does the same job without needing Python installed at all.
 
 PRs welcome.
 
 ---
 
-## License
+## Licence
 
-MIT — see [LICENSE](LICENSE). Do what you like with the code; just keep the copyright notice if you redistribute it.
+MIT — see [LICENSE](LICENSE). Use it for whatever, keep the copyright notice if you redistribute.

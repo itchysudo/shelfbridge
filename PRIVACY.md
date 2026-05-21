@@ -2,93 +2,59 @@
 
 *Last updated: 2026-05-21*
 
-ShelfBridge is a Chrome extension that exports your reading library from
-[Fable](https://fable.co) so you can import it into
-[Goodreads](https://www.goodreads.com). It is built and maintained by
-[itchysudo](https://github.com/itchysudo) as an open-source project.
+ShelfBridge is a Chrome extension I built so I could get my reading library out of [Fable](https://fable.co) and into [Goodreads](https://www.goodreads.com). It's open-source and lives at [github.com/itchysudo/shelfbridge](https://github.com/itchysudo/shelfbridge).
 
-The short version: **everything ShelfBridge does happens inside your own
-browser. Your book data never leaves your computer except when you choose
-to download it.**
+The short version: everything ShelfBridge does happens inside your own browser. Your book data never leaves your computer unless you choose to download it.
 
 ---
 
-## What data ShelfBridge accesses
+## What ShelfBridge looks at
 
-When you click *Connect to Fable*, ShelfBridge:
+When you click **Connect to Fable**, the extension:
 
-1. Looks for a logged-in [fable.co](https://fable.co) tab in your browser, or
-   opens one for you to sign in.
-2. Observes the request headers Fable's own web app sends to its API
-   (`api.fable.co`) so that ShelfBridge can make the same authenticated
-   requests on your behalf.
-3. Calls `api.fable.co` to fetch the books on your shelves — title, author,
-   ISBN, cover image, start date, finish date, and your star rating (if any).
+1. Looks for a logged-in fable.co tab in your browser, or opens one for you to sign into.
+2. Watches the headers that Fable's own web app sends to its API, so the extension can make the same authenticated requests on your behalf.
+3. Calls `api.fable.co` to read your shelves — titles, authors, ISBNs, cover images, start dates, finish dates, and any star ratings.
 
-That is the entire scope of data ShelfBridge accesses. We do not read other
-tabs, your browsing history, your saved passwords, or anything else.
+That's the entire scope. It doesn't read your other tabs, your history, your saved passwords or anything else on your computer.
 
-## What data ShelfBridge stores
+## Where the data lives
 
-The books ShelfBridge fetches are saved locally to Chrome's extension
-storage (`chrome.storage.local`), on your computer only. This lets you
-return to ShelfBridge later and continue where you left off.
+The books the extension fetches are stored locally in Chrome's extension storage (`chrome.storage.local`), on your computer. Nothing else. This is so you can come back to ShelfBridge later and pick up where you left off without re-scraping.
 
-You can wipe this data at any time by **removing the extension** from
-`chrome://extensions`, or by visiting `chrome://settings/cookies` and
-clearing data for the extension.
+To wipe it: either remove the extension from `chrome://extensions`, or clear the extension's storage from `chrome://settings/cookies`.
 
-## What data ShelfBridge sends to third parties
+## What gets sent to third parties
 
-**None.**
+Nothing.
 
-- ShelfBridge has no backend server of its own.
-- It does not include any analytics, telemetry, or tracking.
-- It does not share, sell, or transmit your data to anyone.
-- The only network calls it makes are to `fable.co` and `api.fable.co`,
-  which are Fable's own services. Those calls are made from your browser,
-  as your authenticated user, exactly as Fable's own web app would.
+There's no backend server I run. There are no analytics, no telemetry, no tracking. The only network calls the extension makes are to `fable.co` and `api.fable.co`, which are Fable's own services — and those happen from your browser, as your authenticated user, exactly the way Fable's web app does it.
 
-When you click *Download Goodreads file*, the CSV is generated entirely in
-your browser and saved to your computer. **You** then choose whether and
-when to upload it to Goodreads — ShelfBridge does not.
+When you hit **Download Goodreads file**, the CSV is generated in your browser and saved to your computer. It's up to you to decide whether (and when) to upload it to Goodreads.
 
-## Permissions explained
+## The permissions, and why each one
 
-ShelfBridge requests the minimum permissions needed to do its job. Here's
-what each one is for:
+ShelfBridge asks for the smallest set of permissions it can:
 
-| Permission | Why we need it |
-|---|---|
-| `storage` | To save your scraped books locally so you can review and edit them. |
-| `scripting` | To run our scraper inside your fable.co tab — that's how we read your library. |
-| `tabs` | To find or open the fable.co tab when you click *Connect*. |
-| `webRequest` | To observe the request headers Fable's own web app sends, so we can make the same authenticated API calls. |
-| `host_permissions: https://fable.co/*` and `https://api.fable.co/*` | To restrict everything above to *only* Fable's domains. ShelfBridge cannot read or interact with any other website. |
+- `storage` — to save your books locally so you can review and edit them between sessions.
+- `scripting` — to run the scraper inside your fable.co tab; that's how it reads your library.
+- `tabs` — to find the fable.co tab, or open one, when you click Connect.
+- `webRequest` — to observe the headers Fable's own web app sends, so the extension can make matching authenticated requests.
+- `host_permissions` for `https://fable.co/*` and `https://api.fable.co/*` — this restricts everything above to Fable's domains only. The extension can't see or interact with any other website.
 
-ShelfBridge never sees, stores, or transmits your Fable password — you sign
-in on Fable's own website, in your normal browser session.
+Your Fable password is never seen or stored by ShelfBridge. You sign in on Fable's own page, in your normal browser session.
 
-## Your control
+## You're in control
 
-- **View your data:** open ShelfBridge and click *Library* to see exactly
-  what's stored.
-- **Delete one book:** click the × at the end of any row in the library.
-- **Wipe everything:** remove the extension from `chrome://extensions`, or
-  clear extension data from `chrome://settings/cookies`.
-- **Stop using the extension:** simply disable or uninstall it. Nothing
-  remains on any external server, because we don't run any.
+- **See what's stored:** open ShelfBridge and the Library view shows you exactly what's there.
+- **Delete a book:** click the small × at the end of any row.
+- **Wipe everything:** remove the extension from `chrome://extensions`, or clear extension data from `chrome://settings/cookies`.
+- **Stop using it:** disable or uninstall the extension. There's nothing of yours sitting on any server somewhere, because I don't run one.
 
-## Changes to this policy
+## If this policy changes
 
-If we ever change how ShelfBridge handles data, this document will be
-updated with a new date at the top. Material changes will also be noted in
-the release notes for that version.
+Material changes will get a new date at the top of this document and a note in the release notes for that version.
 
-## Contact
+## Questions?
 
-Questions about this policy or how ShelfBridge handles your data? Please
-[open an issue on GitHub](https://github.com/itchysudo/shelfbridge/issues).
-
-For private inquiries, you can also reach the maintainer at the email
-listed on the [GitHub profile](https://github.com/itchysudo).
+Please [open an issue on GitHub](https://github.com/itchysudo/shelfbridge/issues) — that's the easiest way to reach me. For anything you'd rather not put in public, the email on my [GitHub profile](https://github.com/itchysudo) works too.
