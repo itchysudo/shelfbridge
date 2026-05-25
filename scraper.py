@@ -210,13 +210,12 @@ def _do_discovery(page) -> None:
 
     page.on("response", on_response)
 
-    # URLs to try — refined based on what the first discovery run revealed.
-    # The book-list UUID was supplied by Anthony from his real "Finished
-    # Books" list, so we know it returns real data.
+    # URLs we capture HTML + JSON traffic from. These are public/SPA pages —
+    # the meaningful per-user data comes from XHR responses captured by the
+    # `on_response` listener above, not from the page HTML itself.
     candidate_urls = [
         ("store-home",    "https://fable.co/store"),
         ("store-profile", "https://fable.co/store/profile"),
-        ("book-list",     "https://fable.co/book-list/UUID-REDACTED"),
     ]
 
     saved = []
