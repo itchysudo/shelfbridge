@@ -10,7 +10,9 @@
 // This matches the Flask version's "snoop the SPA's headers" approach in
 // spirit, but is cleaner: the extension literally runs in the SPA's origin.
 
-const LOGIN_URL = "https://fable.co/login";
+// Fable doesn't have a /login route — login is a modal triggered from the
+// home page. We navigate there and then auto-click the trigger.
+const LOGIN_URL = "https://fable.co/";
 
 // Map Fable's `system_type` → our internal shelf identifiers.
 const SHELF_MAP = {
@@ -71,6 +73,65 @@ async function isLoggedIn(tabId) {
         },
     });
     return result;
+}
+
+
+// ---------------------------------------------------------------------------
+// Login modal trigger — Fable's login lives behind a click on the home page,
+// so after navigating there we try to pop the modal automatically. Best
+// effort: if Fable changes their markup, this silently no-ops and the user
+// just sees the homepage with a "click login" instruction.
+// ---------------------------------------------------------------------------
+
+async function triggerLoginModal(tabId) {
+    try {
+        await chrome.scripting.executeScript({
+            target: { tabId },
+            world:  "MAIN",
+            func: async () => {
+                const SIGNALS = ["log in", "login", "log-in",
+                                 "sign in", "signin", "sign-in"];
+                const ATTRS = ["aria-label", "title", "data-testid", "data-test", "id"];
+                const isShortMatch = (raw) => {
+                    const s = (raw || "").toLowerCase().trim();
+                    return s.length > 0 && s.length <= 20 && SIGNALS.includes(s);
+                };
+                const includesSignal = (raw) => {
+                    const s = (raw || "").toLowerCase().trim();
+                    if (!s || s.length > 40) return false;
+                    return SIGNALS.some((sig) => s === sig || s.includes(sig));
+                };
+
+                // Open the auth modal. Always run this — if Fable auto-opens
+                // it the opener might no-op or be redundant, but the state
+                // polling below handles either case correctly.
+                for (const el of document.querySelectorAll('button, a, [role="button"]')) {
+                    const text = el.innerText || el.textContent || "";
+                    if (isShortMatch(text)) { el.click(); break; }
+                    let matched = false;
+                    for (const a of ATTRS) {
+                        if (includesSignal(el.getAttribute(a))) { el.click(); matched = true; break; }
+                    }
+                    if (matched) break;
+                }
+
+                // Poll for the signup form, then click the Log In toggle.
+                // Page text is the state signal — once we see "Please log in"
+                // we stop, so we never bounce between the two forms.
+                for (let i = 0; i < 12; i++) {
+                    await new Promise((r) => setTimeout(r, 300));
+                    const bodyText = document.body.innerText || "";
+                    if (/please log in/i.test(bodyText)) return;
+                    if (!/create your account/i.test(bodyText)) continue;
+                    const toggle = document.querySelector('[data-testid="authFormSignIn"]');
+                    if (toggle) { toggle.click(); return; }
+                }
+            },
+        });
+    } catch (e) {
+        // Don't block the user-facing flow if the click fails — the
+        // not_logged_in error still tells them what to do.
+    }
 }
 
 
@@ -275,13 +336,20 @@ export async function runScrape(progressCb) {
     progressCb?.({ status: "checking", message: "Checking your Fable login…" });
     const loggedIn = await isLoggedIn(tabId);
     if (!loggedIn) {
-        // Steer them to the login page in the same tab.
+        // Make sure we're on the home page (where the login modal lives),
+        // then auto-click the trigger to pop it.
         const tab = await chrome.tabs.get(tabId);
-        if (!/login|signin/.test(tab.url || "")) {
+        const onHome = /^https:\/\/fable\.co\/?(?:[?#]|$)/.test(tab.url || "");
+        if (!onHome) {
             await chrome.tabs.update(tabId, { url: LOGIN_URL, active: true });
+            await waitForTabComplete(tabId);
         } else {
             await chrome.tabs.update(tabId, { active: true });
         }
+        // Small delay so React has rendered the nav before we look for the button.
+        await new Promise((r) => setTimeout(r, 500));
+        await triggerLoginModal(tabId);
+
         throw {
             code: "not_logged_in",
             tabId,
