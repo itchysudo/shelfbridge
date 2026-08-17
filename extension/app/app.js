@@ -145,9 +145,7 @@ function renderBookRow(book) {
         ? `<img class="book-cover" src="${escapeHTML(book.cover_url)}" alt="" loading="lazy">`
         : `<span class="book-cover-placeholder">${placeholderSVG()}</span>`;
 
-    const stars = [1, 2, 3, 4, 5].map((n) =>
-        `<button type="button" class="star" data-value="${n}" aria-label="Rate ${n} star${n === 1 ? "" : "s"}">★</button>`,
-    ).join("");
+    const stars = starsMarkup(book.rating);
 
     const shelfOpts = [
         ["read",              "Read"],
@@ -179,6 +177,60 @@ function renderBookRow(book) {
         </tr>
     `;
 }
+
+// ---------------------------------------------------------------------------
+// Star ratings, including half stars.
+// ---------------------------------------------------------------------------
+// Fable lets people rate in half stars, so the library page has to let them
+// edit in half stars too — otherwise opening a book and clicking its rating
+// would quietly round a 3.5 to a 4.
+//
+// Each star is one button covering half a star either side: click its left half
+// for the half value, its right half for the whole. Which half you clicked is
+// worked out from where in the button the click landed.
+//
+// Filling is done with a class per star rather than the long list of CSS
+// selectors this used to need. Half of a rating point can only ever apply to one
+// star, so three states cover every case.
+
+function starState(starNumber, rating) {
+    const value = Number(rating) || 0;
+    if (value >= starNumber) return "is-full";
+    if (value >= starNumber - 0.5) return "is-half";
+    return "is-empty";
+}
+
+function starsMarkup(rating) {
+    return [1, 2, 3, 4, 5].map((n) => {
+        const state = starState(n, rating);
+        return `<button type="button" class="star ${state}" data-value="${n}" ` +
+               `aria-label="Rate ${n} star${n === 1 ? "" : "s"}" ` +
+               `title="Left half for ${n - 0.5}, right half for ${n}">★</button>`;
+    }).join("");
+}
+
+// Turn a click inside a star button into a rating. Left half gives the half
+// value; anything else gives the whole. Keyboard activation reports an offset of
+// 0 with no width, which falls through to the whole value — half stars need the
+// mouse, which is an acceptable limit for a nicety like this.
+function ratingFromClick(star, event) {
+    const whole = Number(star.dataset.value);
+    const box = star.getBoundingClientRect();
+    if (!box.width) return whole;
+    const clickedLeftHalf = (event.clientX - box.left) < box.width / 2;
+    return clickedLeftHalf ? whole - 0.5 : whole;
+}
+
+// Repaint a row's stars after a change, without re-rendering the whole table.
+function paintStars(starsEl, rating) {
+    starsEl.dataset.value = rating || 0;
+    starsEl.querySelectorAll(".star").forEach((star) => {
+        const state = starState(Number(star.dataset.value), rating);
+        star.classList.remove("is-full", "is-half", "is-empty");
+        star.classList.add(state);
+    });
+}
+
 
 function precisionBadge(type) {
     if (type === "month") {
@@ -242,13 +294,15 @@ function wireLibraryEvents() {
         if (!star) return;
         const stars = star.parentElement;
         const row = star.closest("tr");
-        const clicked = Number(star.dataset.value);
+        const clicked = ratingFromClick(star, event);
         const current = Number(stars.dataset.value);
+        // Clicking the value it's already on clears the rating, so there's a way
+        // back to unrated without a separate control.
         const newRating = (clicked === current) ? 0 : clicked;
 
         const updated = await updateBook(row.dataset.bookId, { rating: newRating || null });
         if (!updated) return;
-        stars.dataset.value = newRating;
+        paintStars(stars, newRating);
         showSaved();
     });
 
@@ -340,7 +394,9 @@ function renderTargetPicker() {
         <label class="target-option">
             <input type="radio" name="target" value="${escapeHTML(t.id)}"
                    ${t.id === selectedTargetId ? "checked" : ""}>
-            <span class="target-label">${escapeHTML(t.label)}</span>
+            <span class="target-label">${escapeHTML(t.label)}${
+                t.beta ? ' <span class="beta-badge">beta</span>' : ""
+            }</span>
             <span class="target-blurb">${escapeHTML(t.blurb)}</span>
         </label>
     `).join("");
@@ -362,9 +418,35 @@ function renderTargetDetails() {
     const target = getTarget(selectedTargetId);
 
     document.getElementById("download-btn").textContent =
-        `Download ${target.label} file`;
+        `Download file for ${target.label}`;
     document.getElementById("import-heading").textContent =
         `How to import into ${target.label}`;
+
+    // Two tick/cross lists, so the difference between destinations can be read
+    // at a glance instead of pieced together from the prose below.
+    const summary = target.summary || { keeps: [], loses: [] };
+    const list = (items, cls, mark) => items.map((i) =>
+        `<li class="${cls}"><span aria-hidden="true">${mark}</span> ${escapeHTML(i)}</li>`
+    ).join("");
+    document.getElementById("target-summary").innerHTML = `
+        <div class="summary-col">
+            <h4>Comes across</h4>
+            <ul>${list(summary.keeps, "keeps", "✓")}</ul>
+        </div>
+        <div class="summary-col">
+            <h4>Doesn't</h4>
+            <ul>${list(summary.loses, "loses", "✗")}</ul>
+        </div>
+    `;
+
+    // fileNote is our own copy and contains a <code> tag on purpose.
+    const noteEl = document.getElementById("file-note");
+    if (target.fileNote) {
+        noteEl.innerHTML = target.fileNote;
+        noteEl.hidden = false;
+    } else {
+        noteEl.hidden = true;
+    }
 
     document.getElementById("import-steps").innerHTML =
         target.instructions.map((step) => {

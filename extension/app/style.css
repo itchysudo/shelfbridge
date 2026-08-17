@@ -356,6 +356,86 @@ h1, h2, h3 {
     line-height: 1.4;
 }
 
+/* Marks the two newer, less-proven destinations. Deliberately quiet: it's a
+   caveat, not a feature to shout about. */
+.beta-badge {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+    vertical-align: 0.1em;
+}
+
+/* ---------- What comes across, and what doesn't ---------- */
+
+.target-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2.5rem;
+    margin: 1rem 0 0.5rem;
+    padding: 0.9rem 1.25rem;
+    border-radius: 12px;
+    background: var(--bg);
+    border: 1px solid var(--hairline);
+}
+
+.summary-col { flex: 1 1 12rem; }
+
+.summary-col h4 {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+}
+
+.summary-col ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.summary-col li {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.12rem 0;
+    font-size: 0.93rem;
+    line-height: 1.4;
+}
+
+/* Green and grey rather than green and red: nothing here is an error, some
+   things simply don't make the trip. */
+.summary-col li.keeps span { color: #2e7d59; font-weight: 700; }
+.summary-col li.loses      { color: var(--muted); }
+.summary-col li.loses span { color: var(--muted); font-weight: 700; }
+
+/* Explains a filename that names a different service than the one picked. */
+.file-note {
+    margin: 0.75rem 0 0;
+    padding: 0.75rem 1rem;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0;
+    background: var(--accent-soft);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--ink);
+}
+
+.file-note code {
+    font-size: 0.88em;
+    padding: 0.05rem 0.25rem;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.7);
+}
+
 /* ---------- Ko-fi support prompt ---------- */
 
 .kofi-box {
@@ -542,24 +622,18 @@ h1, h2, h3 {
 }
 .star:hover { transform: scale(1.15); }
 
-/* Light up the stars up to and including the current rating value.
-   We rely on the parent's data-value to know how many to fill. */
-.stars[data-value="1"] .star[data-value="1"],
-.stars[data-value="2"] .star[data-value="1"],
-.stars[data-value="2"] .star[data-value="2"],
-.stars[data-value="3"] .star[data-value="1"],
-.stars[data-value="3"] .star[data-value="2"],
-.stars[data-value="3"] .star[data-value="3"],
-.stars[data-value="4"] .star[data-value="1"],
-.stars[data-value="4"] .star[data-value="2"],
-.stars[data-value="4"] .star[data-value="3"],
-.stars[data-value="4"] .star[data-value="4"],
-.stars[data-value="5"] .star[data-value="1"],
-.stars[data-value="5"] .star[data-value="2"],
-.stars[data-value="5"] .star[data-value="3"],
-.stars[data-value="5"] .star[data-value="4"],
-.stars[data-value="5"] .star[data-value="5"] {
-    color: #e0a106;  /* warm gold */
+/* Each star carries its own state class, applied in app.js. This replaced a
+   fifteen-line selector list that could only express whole stars. */
+.star.is-full  { color: #e0a106; }   /* warm gold */
+.star.is-empty { color: var(--hairline); }
+
+/* A half star: gold across the left half, empty across the right. Painting the
+   glyph with a hard-edged gradient avoids needing a second overlaid character. */
+.star.is-half {
+    background: linear-gradient(90deg, #e0a106 50%, var(--hairline) 50%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 /* ---------- Delete button ---------- */

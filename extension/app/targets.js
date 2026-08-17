@@ -189,7 +189,11 @@ const GOODREADS_IMPORT_FORMAT = {
             // the one path that's already live for real users, so it stays
             // byte-for-byte what it was before the formats were split out.
             "ISBN":            formatISBN(book.isbn),
-            "My Rating":       book.rating || 0,
+            // Rounded, unlike the other two formats. Goodreads stores whole
+            // stars only, and now that the library page lets people enter half
+            // stars we'd otherwise be handing its importer a 3.5 it can't use.
+            // Better to round predictably here than find out how it reacts.
+            "My Rating":       book.rating ? Math.round(book.rating) : 0,
             "Date Read":       formatDate(book.date_finished),
             "Date Added":      pickDateAdded(book),
             "Exclusive Shelf": book.shelf || "",
@@ -329,8 +333,16 @@ const goodreads = {
     id: "goodreads",
     label: "Goodreads",
     filename: "goodreads_import.csv",
-    blurb: "The original path. Ratings, shelves and finish dates carry over.",
+    blurb: "The original, best-tested route.",
     ...GOODREADS_IMPORT_FORMAT,
+
+    // A compact "what arrives and what doesn't" for the export page. Scannable
+    // at a glance, which the prose notes underneath are not — the point is to
+    // make choosing between destinations easy.
+    summary: {
+        keeps: ["Your shelves", "Whole-star ratings", "Finish dates"],
+        loses: ["Half stars", "Start dates", "Reviews"],
+    },
 
     // Each step is {before, href, linkText, after}. Only `before` is required;
     // the link and `after` let a step put a link mid-sentence rather than
@@ -359,11 +371,27 @@ const goodreads = {
 const storygraph = {
     id: "storygraph",
     label: "StoryGraph",
+    // Newer than the Goodreads route and tested by far fewer people, so it's
+    // flagged in the UI rather than presented as equally proven.
+    beta: true,
     // StoryGraph imports a Goodreads file, so this is named the way Goodreads
-    // names its own export. Confusing otherwise, given the destination.
+    // names its own export. Confusing otherwise, given the destination — hence
+    // fileNote below.
     filename: "goodreads_library_export.csv",
-    blurb: "Shelves and finish dates carry over. Import it as a Goodreads file.",
+    blurb: "Same as Goodreads keeps, but on StoryGraph.",
     ...GOODREADS_EXPORT_FORMAT,
+
+    summary: {
+        keeps: ["Your shelves", "Whole-star ratings", "Finish dates"],
+        loses: ["Half stars", "Start dates"],
+    },
+
+    // The single most confusing thing about this option: you pick StoryGraph
+    // and get a file with Goodreads in the name. Said plainly, next to the
+    // download button, before they wonder whether something went wrong.
+    fileNote: "Your file will be called <code>goodreads_library_export.csv</code>. " +
+              "That's deliberate: StoryGraph doesn't import its own files, only " +
+              "Goodreads ones, so that's exactly what it's expecting. Upload it as it is.",
 
     instructions: [
         {
@@ -399,12 +427,24 @@ const storygraph = {
 const pagebound = {
     id: "pagebound",
     label: "Pagebound",
+    beta: true,
     // Pagebound accepts a Goodreads file too, but only when Goodreads' own
     // Book Id is present, and we can't know it. The StoryGraph shape matches on
     // ISBN instead, so that's the route we use — hence the filename.
     filename: "storygraph_library_export.csv",
-    blurb: "The only route that keeps half-star ratings. Import it as a StoryGraph file.",
+    blurb: "Keeps the most, including half stars.",
     ...STORYGRAPH_FORMAT,
+
+    summary: {
+        keeps: ["Your shelves", "Whole-star ratings", "Finish dates",
+                "Half-star ratings"],
+        loses: ["Start dates"],
+    },
+
+    fileNote: "Your file will be called <code>storygraph_library_export.csv</code>. " +
+              "That's deliberate: Pagebound accepts StoryGraph files as well as " +
+              "Goodreads ones, and the StoryGraph route works better. Choose the " +
+              "StoryGraph option when you upload it.",
 
     instructions: [
         {

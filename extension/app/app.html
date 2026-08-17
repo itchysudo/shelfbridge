@@ -158,6 +158,15 @@
                 <div id="target-options"></div>
             </fieldset>
 
+            <!-- What arrives and what doesn't, for the chosen destination.
+                 Sits directly under the picker because it's what makes the
+                 choice between them obvious. -->
+            <div id="target-summary" class="target-summary"></div>
+
+            <!-- Only shown for destinations whose file is named after a
+                 different service, which is otherwise alarming. -->
+            <p id="file-note" class="file-note" hidden></p>
+
             <div class="actions">
                 <button id="download-btn" class="btn btn-primary">Download file</button>
                 <a href="#" id="back-to-library" class="btn btn-link">← Back to library</a>
