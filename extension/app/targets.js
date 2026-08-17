@@ -383,10 +383,10 @@ const storygraph = {
     notes: [
         "<strong>Date Read</strong> is your Fable finish date, and it comes " +
         "across correctly.",
-        "<strong>Start dates aren't shown.</strong> No Goodreads-style file has " +
-        "a \"date started\" column, so we put your Fable start date in Date " +
-        "Added. StoryGraph keeps the value, and you'd get it back if you ever " +
-        "exported from StoryGraph, but it isn't displayed anywhere in the app.",
+        "<strong>Start dates don't come across.</strong> StoryGraph does track " +
+        "one, under a book's journal entries, and it will create a \"Started " +
+        "reading\" entry for you. It just won't have a date on it, because no " +
+        "Goodreads-style file has a column to carry one.",
         "<strong>Half stars get rounded to whole ones.</strong> StoryGraph " +
         "stores quarter stars, but its Goodreads importer rounds on the way in, " +
         "so a 3.5 arrives as a 4. That's their importer rather than anything we " +
