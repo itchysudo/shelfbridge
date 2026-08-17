@@ -17,3 +17,9 @@ _discovery/
 # Local-only reference files (not generated or used by the tool)
 sample_export.csv
 *.gdoc
+
+# Local notes and machine-transfer bundles, never for the public repo
+docs/
+
+# Extension build artifacts
+shelfbridge-v*.zip
