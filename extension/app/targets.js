@@ -156,38 +156,53 @@ const goodreads = {
 // library via CSV, and we will transfer whatever data is available"), so we
 // emit that shape rather than inventing a Pagebound-specific format.
 //
-// These are the 23 columns a current Goodreads export carries. Goodreads
-// dropped eight trailing columns (Recommended For through BCID) in mid-2022;
-// older exports in the wild still have them, but importers written against
-// the modern file expect this set.
+// These are the 23 columns a current Goodreads export carries, taken from a
+// real 2026 export rather than from documentation — the published column lists
+// are out of date and cost us a rejected import. Goodreads dropped eight
+// columns in mid-2022: Average Rating plus the seven from Recommended For to
+// BCID. Owned Copies survived and is last.
+//
+// Pagebound checks this header to decide whether a file really is a Goodreads
+// export, so the names and their order have to match exactly. Getting the
+// column *count* right isn't enough.
 
 const GOODREADS_EXPORT_COLUMNS = [
     "Book Id", "Title", "Author", "Author l-f", "Additional Authors",
-    "ISBN", "ISBN13", "My Rating", "Average Rating", "Publisher", "Binding",
+    "ISBN", "ISBN13", "My Rating", "Publisher", "Binding",
     "Number of Pages", "Year Published", "Original Publication Year",
     "Date Read", "Date Added", "Bookshelves", "Bookshelves with positions",
     "Exclusive Shelf", "My Review", "Spoiler", "Private Notes", "Read Count",
+    "Owned Copies",
 ];
 
 const pagebound = {
     id: "pagebound",
     label: "Pagebound",
-    filename: "pagebound_import.csv",
+    // Named the way Goodreads names its own export. Pagebound asks for "a
+    // Goodreads or StoryGraph file", so this is both the least confusing thing
+    // to hand their upload box and one fewer difference for their source
+    // detection to trip over.
+    filename: "goodreads_library_export.csv",
     blurb: "Goes direct, so your start dates survive. Skips Goodreads entirely.",
     columns: GOODREADS_EXPORT_COLUMNS,
 
     instructions: [
         {
-            before: "Open Pagebound and find the library import option. Their ",
-            href: "https://support.pagebound.co/library_faq",
-            linkText: "import help",
-            after: " covers where it lives.",
+            before: "Open ",
+            href: "https://pagebound.co/import-library",
+            linkText: "pagebound.co/import-library",
+            after: ", or click your profile picture, then the settings cog, " +
+                   "then Import library.",
         },
         {
-            before: "Choose the option to import from a Goodreads CSV. This " +
-                    "file is in exactly that format, which is why it works.",
+            before: "Click Choose file and pick the file you just downloaded. " +
+                    "Pagebound imports Goodreads CSVs, and this file is in " +
+                    "exactly that format, which is why it works.",
         },
-        { before: "Upload the file you just downloaded and give it a couple of minutes." },
+        {
+            before: "Start the import. It takes a few minutes, and Pagebound " +
+                    "lets you know once your books are in.",
+        },
     ],
 
     notes: [
@@ -205,10 +220,13 @@ const pagebound = {
         const digits = isbnDigits(book.isbn);
 
         // A Goodreads export splits ISBNs across two columns by length. Fable
-        // gives us a single value, so route it to whichever column fits and
-        // leave the other empty. ISBN13 is the more useful one for matching.
-        const isbn10 = digits.length === 10 ? formatISBN(digits) : "";
-        const isbn13 = digits.length === 13 ? formatISBN(digits) : "";
+        // gives us a single value, so route it to whichever column fits.
+        //
+        // The empty side still gets the ="" wrapper rather than a bare empty
+        // cell, because that's what a real export does — a book with no ISBN
+        // comes out as ="" in both columns, not as nothing.
+        const isbn10 = digits.length === 10 ? formatISBN(digits) : '=""';
+        const isbn13 = digits.length === 13 ? formatISBN(digits) : '=""';
 
         return {
             // Book Id is Goodreads' own internal identifier. We have Fable's
@@ -220,10 +238,15 @@ const pagebound = {
             "Author l-f":      authorLastFirst(book.author),
             "ISBN":            isbn10,
             "ISBN13":          isbn13,
-            // Fable supports half stars and Goodreads-shaped files don't, so
-            // round to the nearest whole star rather than emit a value the
-            // importer may not parse. Whole-star ratings are unaffected.
-            "My Rating":       book.rating ? Math.round(book.rating) : 0,
+            // A real export writes rated books with one decimal place ("3.0")
+            // and unrated ones as a bare "0". Mirroring that exactly.
+            //
+            // Fable supports half stars and Goodreads doesn't, so we round to
+            // the nearest whole star. The column is clearly decimal-capable, so
+            // passing 3.5 through may well work, but no real export contains a
+            // half value to confirm it against — not worth risking on the same
+            // change that's trying to get the import accepted at all.
+            "My Rating":       book.rating ? `${Math.round(book.rating)}.0` : 0,
             "Date Read":       formatDate(book.date_finished),
             "Date Added":      pickDateAdded(book),
             "Bookshelves":     book.shelf || "",
@@ -231,6 +254,9 @@ const pagebound = {
             // Goodreads exports use 1 for a book you've finished and 0
             // otherwise. Mirroring that keeps read/unread unambiguous.
             "Read Count":      book.shelf === "read" ? 1 : 0,
+            // Always 0 in a real export unless you track physical copies,
+            // which Fable has no concept of.
+            "Owned Copies":    0,
         };
     },
 };
