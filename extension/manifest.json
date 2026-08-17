@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ShelfBridge",
   "version": "1.0.1",
-  "description": "Move your reading library from Fable to Goodreads. Everything runs in your browser — your data stays with you.",
+  "description": "Get your reading library out of Fable and into Goodreads, StoryGraph or Pagebound. Everything runs in your own browser.",
 
   "icons": {
     "16":  "icons/icon-16.png",

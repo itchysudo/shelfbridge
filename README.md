@@ -1,15 +1,23 @@
 # ShelfBridge
 
-*Fable to Goodreads, in a few clicks.*
+*Get your reading library out of Fable, in a few clicks.*
 
-ShelfBridge gets your reading library out of Fable and into Goodreads. Fable doesn't have an export feature and Goodreads turned off their public API in 2020, so this little gap has been sitting there annoying me for a while. This is my way of bridging it. The tool runs locally, on your own machine or inside your own browser, and nothing about your library is sent anywhere on the way through.
+ShelfBridge gets your reading library out of Fable so you can take it somewhere else. Fable has no export feature of its own, so once your books are in there, they're stuck. That gap sat there annoying me for a while, and this is my way of bridging it. The tool runs locally, on your own machine or inside your own browser, and nothing about your library is sent anywhere on the way through.
+
+You can send your library to:
+
+- **Goodreads**, the original route and the one most people have used
+- **StoryGraph**
+- **Pagebound**
+
+You don't have to pick just one. Your library stays in the tool after you download, so you can export again for somewhere else whenever you like.
 
 There are two ways to run it:
 
 - **Chrome extension.** Live on the Chrome Web Store, search for *ShelfBridge*. This is the easiest option for most people and needs nothing installed.
-- **Local Python app.** Same tool, running as a small Flask app on your computer. Useful if you don't want to install the extension or you're on Linux.
+- **Local Python app.** Same tool, running as a small Flask app on your computer. Useful if you don't want to install the extension or you're on Linux. Note the extension is the one that gets new features first: the Python version currently only does Goodreads.
 
-Both talk to Fable the same way and produce the same CSV.
+Both talk to Fable the same way.
 
 ---
 
@@ -83,22 +91,49 @@ When you're done, close the terminal window or hit Ctrl+C inside it to stop the 
 Whichever option you picked, the wizard is the same three steps:
 
 1. **Connect to Fable.** Click the Connect button. The tool opens Fable in another tab and pops the login modal for you. Sign in as you normally would, then come back and click Connect again. The tool reads your shelves, which usually takes between ten and sixty seconds.
-2. **Review your library.** A table of every book appears. Have a quick scroll through to check the titles, authors, dates and ISBNs look right. You can click any cell to edit it, click the stars to add ratings, and use the small × on each row to drop a book you don't want to migrate. Everything saves as you go.
-3. **Download.** Hit **Download Goodreads file** and you'll get `goodreads_import.csv`.
+2. **Review your library.** A table of every book appears. Have a quick scroll through to check the titles, authors, dates and ISBNs look right. You can click any cell to edit it, set a rating on the stars (click the left half of a star for a half star), and use the small × on each row to drop a book you don't want to take with you. Everything saves as you go.
+3. **Pick where it's going and download.** Choose Goodreads, StoryGraph or Pagebound. The page shows you what comes across for that one and walks you through importing it.
 
 ---
 
-## Importing into Goodreads
+## What comes across, and what doesn't
 
-1. Head to <https://www.goodreads.com/review/import> (sign in if you need to).
-2. Pick "Choose File" and select the CSV you just downloaded.
-3. Hit "Import books" and give it a minute.
-4. Your library should now be on Goodreads, on the right shelves, with your finish dates intact.
+Everything in this table was checked by actually importing into a real account, not read off a help page.
 
-Two things worth knowing up front:
+| | Goodreads | StoryGraph | Pagebound |
+|---|---|---|---|
+| Your shelves | yes | yes | yes |
+| Whole-star ratings | yes | yes | yes |
+| Finish dates | yes | yes | yes |
+| Half-star ratings | rounded | rounded | **kept** |
+| Start dates | no | no | no |
+| Reviews | no | no | no |
 
-- **Reviews don't come across.** Goodreads' importer drops the review column on the floor, that's their limitation, not the tool's. Ratings, shelves and the date you finished each book all land fine.
-- **Start dates don't survive the import.** Goodreads' CSV format has no "date started" column, so I put your Fable start date in "Date Added" as the nearest equivalent. It's sitting there in the file if you open it yourself, but Goodreads throws that value away on import and stamps its own date instead. Nothing I can do about it from this end.
+**Start dates don't come across anywhere.** All three apps can store one, but none of the file formats they'll accept has a column to carry it, so the field is left blank and you'd have to fill it in yourself. Finish dates are fine everywhere.
+
+**Half stars only survive on Pagebound.** Goodreads can't store them at all. StoryGraph can, but its Goodreads importer rounds them on the way in, so a 3.5 lands as a 4.
+
+### One thing that looks wrong but isn't
+
+The file is named after its **format**, not the app you picked. So:
+
+| You pick | You get | Because |
+|---|---|---|
+| Goodreads | `goodreads_import.csv` | Goodreads' own import format |
+| StoryGraph | `goodreads_library_export.csv` | StoryGraph only imports Goodreads files, not its own |
+| Pagebound | `storygraph_library_export.csv` | Pagebound takes StoryGraph files, and that route works better than its Goodreads one |
+
+Upload them exactly as they are. The export page says all this as you go, so you don't have to remember it.
+
+---
+
+## Importing
+
+**Goodreads.** Head to <https://www.goodreads.com/review/import>, pick "Choose File", select the CSV, and hit "Import books". Give it a minute.
+
+**StoryGraph.** Go to <https://app.thestorygraph.com/>, then Manage Account and find the import section. Use the **Goodreads** import option, because StoryGraph doesn't import its own files. Upload and give it a few minutes.
+
+**Pagebound.** Go to <https://pagebound.co/import-library>, or click your profile picture, then the settings cog, then Import library. Choose the **StoryGraph** option, not the Goodreads one. Upload and give it a few minutes.
 
 ---
 
@@ -128,6 +163,12 @@ Right-click `start.command`, pick **Open**, then **Open** again. You only have t
 **Windows: "Windows protected your PC"**
 Click **More info** then **Run anyway**.
 
+**The app says it only imports Goodreads or StoryGraph files, and rejects mine**
+Make sure you picked the matching option in that app: StoryGraph's *Goodreads* import for the StoryGraph file, and Pagebound's *StoryGraph* option for the Pagebound one. These apps check the file's header to work out where it came from, so uploading it under the wrong option will bounce it.
+
+**Hardly any of my books imported**
+Almost always the wrong option, as above. If it's definitely right, the app couldn't match the books in its own catalogue, which happens with unusual editions. Books without an ISBN are the most likely to be missed.
+
 ---
 
 ## Privacy
@@ -143,12 +184,19 @@ This repo has both variants of the tool:
 | Path | What it is |
 |---|---|
 | `extension/` | Chrome extension (MV3). The user-facing shipping path. |
-| `app.py`, `scraper.py`, `transformer.py`, `db.py`, `templates/`, `static/` | Local Flask app, same functionality without needing Chrome. |
+| `extension/app/targets.js` | Export formats and destinations. This is where you'd add a new one. |
+| `app.py`, `scraper.py`, `transformer.py`, `db.py`, `templates/`, `static/` | Local Flask app. Goodreads only, for now. |
 | `setup.sh` / `setup.bat` | One-time installer for the Python side. |
 | `start.command` / `start.bat` | Double-clickable launchers for the Python app. |
 | `requirements.txt` | Python deps. |
 
 Both variants share the same header-snooping approach against `api.fable.co`. A naive `Authorization: Bearer <jwt>` returns 403, so the tool watches the SPA's own outgoing requests (via `chrome.webRequest` in the extension, `page.on("request")` in Playwright) and replays those headers verbatim.
+
+### Adding a destination
+
+`targets.js` keeps **formats** and **destinations** separate, because they don't line up the way you'd expect. A destination rarely accepts the format named after it: StoryGraph wants a Goodreads export, and Pagebound wants a StoryGraph one. Adding a destination means adding an entry that points at whichever format that app really takes, and nothing else in the codebase changes.
+
+One hard-won rule if you do: **get a real export out of the target app before writing the transformer.** Published column lists for Goodreads are wrong in both directions, and these apps identify a file by matching its header exactly, so a list that's the right length but the wrong contents gets silently rejected. Every format in `targets.js` was built from a real export and there are tests pinning those headers verbatim.
 
 For hot-reload and the Werkzeug debugger during development of the Flask app:
 

@@ -21,7 +21,7 @@
             </svg>
             ShelfBridge
         </h1>
-        <p class="tagline">Fable → Goodreads</p>
+        <p class="tagline">Get your library out of Fable</p>
     </header>
 
     <!-- Step indicator. JS hides it on the guide view. -->
@@ -41,16 +41,24 @@
         <section class="view card" data-view="intro" hidden>
             <h2>Welcome</h2>
             <p class="lead">
-                ShelfBridge moves your reading library from Fable to Goodreads.
-                The whole process takes about five minutes.
+                ShelfBridge gets your reading library out of Fable, so you can
+                take it wherever you like. The whole thing takes about five
+                minutes.
             </p>
 
             <h3>What happens next</h3>
             <ol class="explainer">
                 <li>We'll open a Fable tab so you can log in (or use one you already have open).</li>
                 <li>We'll read your library and bring it back here for review.</li>
-                <li>You'll download a file and upload it to Goodreads. Done.</li>
+                <li>You'll pick where it's going, download a file, and upload it there.</li>
             </ol>
+
+            <p class="reassure">
+                You can send it to <strong>Goodreads</strong>,
+                <strong>StoryGraph</strong> or <strong>Pagebound</strong>. Pick
+                at the end, and you can come back and download for another one
+                whenever you want.
+            </p>
 
             <div class="actions">
                 <button id="connect-btn" class="btn btn-primary">Connect to Fable</button>
@@ -97,11 +105,11 @@
                 edit — your changes save automatically.
             </p>
             <p class="note">
-                <strong>About the "Started" column:</strong> Goodreads doesn't
-                have a "date started reading" field in its CSV import. We use
-                Fable's start date as Goodreads' <em>Date Added</em> instead —
-                it's the closest signal we have to when each book entered your
-                library.
+                <strong>About the Started column:</strong> your Fable start dates
+                are shown here so you've got them, but none of the places you can
+                export to will take one. None of the file formats they accept has
+                a column for it, so the start date is left blank wherever you send
+                your library. Finish dates come across fine.
             </p>
 
             <div class="filter-bar" role="tablist" aria-label="Filter by shelf">
@@ -142,7 +150,7 @@
         </section>
 
         <!-- ============================================================== -->
-        <!-- View: EXPORT (download + Goodreads instructions)                -->
+        <!-- View: EXPORT (pick a destination, download, import steps)       -->
         <!-- ============================================================== -->
         <section class="view card" data-view="export" hidden>
             <h2>Download &amp; import</h2>
@@ -212,9 +220,9 @@
             <div class="card">
                 <h2>How to use ShelfBridge</h2>
                 <p class="lead">
-                    A complete walkthrough of moving your library from Fable to
-                    Goodreads. Each section below corresponds to one of the
-                    three steps in the wizard.
+                    A complete walkthrough of getting your library out of Fable.
+                    Each section below corresponds to one of the three steps in
+                    the wizard.
                 </p>
 
                 <h3>Step 1 — Connect to Fable</h3>
@@ -238,7 +246,7 @@
                 </p>
                 <ul class="explainer">
                     <li><strong>Edit any cell</strong> — title, author, shelf, dates, rating, or ISBN.</li>
-                    <li><strong>Star ratings</strong> — click a star to set, click the same star again to clear.</li>
+                    <li><strong>Star ratings</strong>, including half stars: click the left half of a star for the half, the right half for the whole. Click the same spot again to clear it.</li>
                     <li><strong>Filter by shelf</strong> — pill buttons above the table.</li>
                     <li><strong>Delete a row</strong> — small × at the end of each row.</li>
                 </ul>
@@ -251,20 +259,41 @@
                     once you do.
                 </p>
 
-                <h3>Step 3 — Export &amp; import to Goodreads</h3>
-                <ol class="explainer">
-                    <li>Click <strong>Continue to export →</strong>, then <strong>Download Goodreads file</strong>.</li>
-                    <li>Open <a href="https://www.goodreads.com/review/import" target="_blank" rel="noopener">goodreads.com/review/import</a>.</li>
-                    <li>Upload the downloaded file. Wait a minute or two while Goodreads processes it.</li>
-                </ol>
+                <h3>Step 3 — Pick where it's going</h3>
+                <p>
+                    Click <strong>Continue to export</strong> and choose a
+                    destination. Each one tells you what comes across and what
+                    doesn't, and gives you the steps for importing into that
+                    particular app.
+                </p>
+                <ul class="explainer">
+                    <li><strong>Goodreads.</strong> The original route, and the one most people have used.</li>
+                    <li><strong>StoryGraph.</strong> Upload the file using StoryGraph's <em>Goodreads</em> import, because StoryGraph doesn't import its own files.</li>
+                    <li><strong>Pagebound.</strong> Upload the file using Pagebound's <em>StoryGraph</em> option. This is the only one that keeps half stars.</li>
+                </ul>
+                <p class="note">
+                    <strong>Why the file has the wrong name:</strong> files are
+                    named after the format, not the app. So choosing StoryGraph
+                    gets you a file with "goodreads" in the name, and choosing
+                    Pagebound gets you one with "storygraph" in it. That's
+                    correct, and the export page explains it as you go. Upload
+                    them exactly as they are.
+                </p>
 
                 <h3>Things to know about dates and ratings</h3>
                 <ul class="explainer">
-                    <li><strong>Date Read</strong> in Goodreads = your Fable <em>finish</em> date.</li>
-                    <li><strong>Date Added</strong> in Goodreads is mapped from your Fable <em>start</em> date — Goodreads' CSV format has no "date started reading" column.</li>
-                    <li>To-Read books have a blank Date Added; Goodreads fills in today's date on import.</li>
-                    <li>Reviews don't transfer. Ratings, shelves, and dates all come across.</li>
+                    <li><strong>Finish dates come across everywhere.</strong></li>
+                    <li><strong>Start dates don't come across at all.</strong> None of these apps can import one, because none of the file formats they accept has a column for it. You'd have to add them by hand afterwards.</li>
+                    <li><strong>Half stars only survive on Pagebound.</strong> Goodreads can't store them, and StoryGraph rounds them on the way in even though it can.</li>
+                    <li><strong>Reviews don't transfer</strong> anywhere.</li>
                 </ul>
+
+                <h4>Can I send my library to more than one place?</h4>
+                <p>
+                    Yes. Your library stays here after you download, so you can
+                    go back to the export page, pick a different destination and
+                    download again. Nothing is used up.
+                </p>
 
                 <h3>Privacy</h3>
                 <p>
