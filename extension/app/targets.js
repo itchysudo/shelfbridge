@@ -62,9 +62,14 @@ function isbnDigits(isbn) {
 // books already read, so the row still carries a real historical date. Empty
 // means the destination stamps its own date on import.
 //
-// Worth knowing: Goodreads itself DISCARDS this value on import, so start dates
-// only survive on routes that don't pass through Goodreads. Both StoryGraph and
-// Pagebound honour it.
+// Do not promise users their start dates "survive". What actually happens,
+// measured in all three:
+//   Goodreads   discards the value outright and stamps its own date
+//   StoryGraph  stores it (a later export hands it back) but never displays it
+//   Pagebound   doesn't display it either
+// So no destination shows a start date anywhere. We still fill the column
+// because it costs nothing and keeps the value recoverable in a future export,
+// but the UI must not imply the user will see it.
 function pickDateAdded(book) {
     if (book.date_started) return formatDate(book.date_started);
     if (book.shelf === "read" && book.date_finished) {
@@ -343,10 +348,9 @@ const goodreads = {
 
     notes: [
         "<strong>Date Read</strong> comes from your Fable <em>finish</em> date.",
-        "<strong>Start dates don't survive.</strong> We put your Fable start " +
-        "date in Date Added, but Goodreads throws that value away on import " +
-        "and stamps its own. Nothing we can do from this end. If your start " +
-        "dates matter, StoryGraph keeps them.",
+        "<strong>Start dates don't come across.</strong> We put your Fable " +
+        "start date in Date Added, but Goodreads throws that value away on " +
+        "import and stamps its own. Nothing we can do from this end.",
         "<strong>Reviews aren't accepted</strong> by Goodreads' importer, and " +
         "half-star ratings get rounded because Goodreads only does whole stars.",
     ],
@@ -358,7 +362,7 @@ const storygraph = {
     // StoryGraph imports a Goodreads file, so this is named the way Goodreads
     // names its own export. Confusing otherwise, given the destination.
     filename: "goodreads_library_export.csv",
-    blurb: "Keeps your start dates. Import it as a Goodreads file.",
+    blurb: "Shelves and finish dates carry over. Import it as a Goodreads file.",
     ...GOODREADS_EXPORT_FORMAT,
 
     instructions: [
@@ -377,10 +381,12 @@ const storygraph = {
     ],
 
     notes: [
-        "<strong>Your start dates survive.</strong> StoryGraph honours Date " +
-        "Added, where Goodreads discards it.",
-        "<strong>Date Read</strong> is your Fable finish date and " +
-        "<strong>Date Added</strong> your Fable start date.",
+        "<strong>Date Read</strong> is your Fable finish date, and it comes " +
+        "across correctly.",
+        "<strong>Start dates aren't shown.</strong> No Goodreads-style file has " +
+        "a \"date started\" column, so we put your Fable start date in Date " +
+        "Added. StoryGraph keeps the value, and you'd get it back if you ever " +
+        "exported from StoryGraph, but it isn't displayed anywhere in the app.",
         "<strong>Half stars get rounded to whole ones.</strong> StoryGraph " +
         "stores quarter stars, but its Goodreads importer rounds on the way in, " +
         "so a 3.5 arrives as a 4. That's their importer rather than anything we " +
@@ -397,7 +403,7 @@ const pagebound = {
     // Book Id is present, and we can't know it. The StoryGraph shape matches on
     // ISBN instead, so that's the route we use — hence the filename.
     filename: "storygraph_library_export.csv",
-    blurb: "Keeps start dates and half-star ratings. Import it as a StoryGraph file.",
+    blurb: "The only route that keeps half-star ratings. Import it as a StoryGraph file.",
     ...STORYGRAPH_FORMAT,
 
     instructions: [
@@ -419,10 +425,13 @@ const pagebound = {
     ],
 
     notes: [
-        "<strong>This option loses the least.</strong> A 3.5 in Fable stays a " +
-        "3.5 here, which is the only route that manages it.",
-        "<strong>Last Date Read</strong> is your Fable finish date and " +
-        "<strong>Date Added</strong> your Fable start date.",
+        "<strong>Half stars survive.</strong> A 3.5 in Fable stays a 3.5 here, " +
+        "which no other option manages.",
+        "<strong>Last Date Read</strong> is your Fable finish date, and it comes " +
+        "across correctly.",
+        "<strong>Start dates aren't shown.</strong> We put your Fable start date " +
+        "in Date Added, since there's no \"date started\" column to put it in, " +
+        "but Pagebound doesn't display it.",
         "Books on your To-Read shelf land on your Pagebound TBR list.",
     ],
 };
