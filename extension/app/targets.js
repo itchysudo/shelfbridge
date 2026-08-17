@@ -429,9 +429,10 @@ const pagebound = {
         "which no other option manages.",
         "<strong>Last Date Read</strong> is your Fable finish date, and it comes " +
         "across correctly.",
-        "<strong>Start dates aren't shown.</strong> We put your Fable start date " +
-        "in Date Added, since there's no \"date started\" column to put it in, " +
-        "but Pagebound doesn't display it.",
+        "<strong>Start dates don't come across.</strong> Pagebound does have a " +
+        "Started date on each book, which you'll find by clicking the dates, but " +
+        "nothing in this file fills it in, so it stays blank. Anything you're " +
+        "part-way through gets stamped with the date you imported instead.",
         "Books on your To-Read shelf land on your Pagebound TBR list.",
     ],
 };
