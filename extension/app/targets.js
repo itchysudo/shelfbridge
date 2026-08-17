@@ -1,39 +1,39 @@
-// ShelfBridge — export target definitions.
+// ShelfBridge — export formats and destinations.
 //
-// Each destination we can export to is one entry in TARGETS. A target owns
-// everything that differs between destinations: its column list, how a book
-// maps onto those columns, the filename, and the import instructions shown
-// on the export page. Adding a new destination means adding one entry here,
-// not touching the scraper or the export view.
+// Two separate ideas live in this file, and keeping them apart is what makes it
+// readable:
 //
-// The scraper and storage layers are deliberately destination-agnostic —
-// they store a book in our own shape, and targets translate at the last
-// moment.
+//   FORMATS      the actual shape of a CSV — its columns and how a book maps
+//                onto them. There are three.
+//   DESTINATIONS the apps a user can send their library to. Each destination
+//                picks one format.
 //
-// ---------------------------------------------------------------------------
-// A note on the two different Goodreads formats, because they are easy to mix
-// up and the difference is the whole reason this file exists:
+// The confusing part, which is why this comment exists: a destination usually
+// does NOT use the format named after it. All of the below was established by
+// testing against real accounts, not from documentation:
 //
-//   * Goodreads IMPORT format (26 columns, starts with "Title") is what
-//     goodreads.com/review/import accepts. That's the "goodreads" target.
-//   * Goodreads EXPORT format (23 columns, starts with "Book Id") is what
-//     Goodreads *produces* when you export your library. Other reading apps
-//     built "import from Goodreads" flows against that shape, so it's what
-//     they expect. That's the "pagebound" target.
+//   Goodreads   accepts the Goodreads IMPORT shape (26 columns)
+//   StoryGraph  accepts a Goodreads EXPORT file. It has no "import StoryGraph
+//               CSV" option at all — its own export format is for feeding other
+//               apps, not itself.
+//   Pagebound   accepts either a Goodreads export or a StoryGraph export, but
+//               the Goodreads route only works when Book Id is filled in, and
+//               we never have Goodreads' internal ids. So Pagebound gets the
+//               StoryGraph shape, which identifies books by plain ISBN.
 //
-// Emitting the export shape directly is what lets a user skip Goodreads
-// altogether. That matters for more than convenience: Goodreads discards the
-// Date Added value on import, so start dates only survive on paths that don't
-// route through Goodreads.
-// ---------------------------------------------------------------------------
+// Adding a destination means adding one entry to DESTINATIONS pointing at
+// whichever format that app actually accepts. Nothing else changes.
+//
+// The scraper and storage layers stay destination-agnostic: they store a book
+// in our own shape and translation happens here, at the last moment.
 
 
 // ---------------------------------------------------------------------------
 // Shared field helpers.
 // ---------------------------------------------------------------------------
 
-// Our stored dates are YYYY-MM-DD. Both Goodreads formats want YYYY/MM/DD.
-// Also tolerates a full timestamp by keeping only the date portion.
+// Our stored dates are YYYY-MM-DD. Every format here wants YYYY/MM/DD. Also
+// tolerates a full timestamp by keeping only the date portion.
 function formatDate(s) {
     if (!s) return "";
     const datePart = String(s).split(" ")[0].split("T")[0];
@@ -42,7 +42,8 @@ function formatDate(s) {
 
 // Wrap an ISBN as ="..." so spreadsheet apps don't mangle the long number
 // (they'd otherwise convert to scientific notation or strip leading zeros).
-// Goodreads-style importers understand and strip the wrapper.
+// Goodreads writes ISBNs this way in both its formats. StoryGraph does NOT —
+// its ISBNs are bare.
 function formatISBN(isbn) {
     if (!isbn) return "";
     return `="${isbn}"`;
@@ -54,17 +55,59 @@ function isbnDigits(isbn) {
     return String(isbn || "").replace(/[^0-9Xx]/g, "").toUpperCase();
 }
 
+// Pick the best value for a "Date Added" column.
+//
+// None of these formats has a "date started" column, so Fable's start date goes
+// in Date Added as the nearest equivalent. Falls back to the finish date for
+// books already read, so the row still carries a real historical date. Empty
+// means the destination stamps its own date on import.
+//
+// Worth knowing: Goodreads itself DISCARDS this value on import, so start dates
+// only survive on routes that don't pass through Goodreads. Both StoryGraph and
+// Pagebound honour it.
+function pickDateAdded(book) {
+    if (book.date_started) return formatDate(book.date_started);
+    if (book.shelf === "read" && book.date_finished) {
+        return formatDate(book.date_finished);
+    }
+    return "";
+}
+
+// Format a rating the way real exports do: a whole number gets one decimal
+// place ("3.0"), and fractions are left alone ("2.5", "3.25"). Fable supports
+// half stars, so we never round — every format here writes the rating column as
+// a decimal, and the destination can round it down itself if it must.
+function decimalRating(rating) {
+    return Number.isInteger(rating) ? `${rating}.0` : String(rating);
+}
+
+// Convert "Ursula Le Guin" into "Le Guin, Ursula" for Goodreads' "Author l-f"
+// column.
+//
+// Deliberately conservative. Splitting a display name into first and last parts
+// is guesswork, and getting it wrong looks worse than leaving the column empty —
+// importers match on ISBN and title first, so this field is a nicety rather than
+// load-bearing. We only handle the unambiguous two-word case and bail out on
+// everything else: multi-author strings (which our scraper joins with ", "),
+// names that already contain a comma, mononyms, and long names where the surname
+// boundary isn't obvious.
+function authorLastFirst(author) {
+    const name = String(author || "").trim();
+    if (!name || name.includes(",")) return "";
+    const parts = name.split(/\s+/);
+    if (parts.length !== 2) return "";
+    return `${parts[1]}, ${parts[0]}`;
+}
+
 // ---------------------------------------------------------------------------
 // ISBN-10 <-> ISBN-13 conversion.
 // ---------------------------------------------------------------------------
-// A real Goodreads export fills both the ISBN and ISBN13 columns for nearly
-// every book. Fable only gives us one of the two, and leaving the other empty
-// means an importer that reads the column we didn't fill has nothing to match
-// on. The two forms convert deterministically, so we can supply both.
-//
-// The conversion is pure arithmetic on the check digit; it invents no
-// information. Only 978-prefixed ISBN-13s have a 10-digit equivalent — the 979
-// range has none, so we leave that side empty for those.
+// Fable gives us one ISBN, but a real Goodreads export fills both its ISBN and
+// ISBN13 columns for nearly every book, and StoryGraph wants the 13-digit form.
+// The two forms convert deterministically, so we can always supply what's
+// wanted. The conversion is pure arithmetic on the check digit and invents no
+// information. Only 978-prefixed ISBN-13s have a 10-digit equivalent; the 979
+// range has none.
 
 // EAN-13 check digit: alternate weights of 1 and 3 across the first 12 digits.
 function ean13CheckDigit(twelve) {
@@ -92,67 +135,190 @@ function isbn10to13(isbn10) {
 }
 
 function isbn13to10(isbn13) {
-    // Only the 978 range maps back to a 10-digit ISBN.
     if (!/^978\d{10}$/.test(isbn13)) return "";
     const nine = isbn13.slice(3, 12);
     return nine + isbn10CheckDigit(nine);
 }
 
-// Pick the best value for the "Date Added" column.
-//
-// Neither Goodreads format has a "date started" column, so we put Fable's
-// start date there as the nearest equivalent. Falls back to the finish date
-// for books already read, so the row still carries a real historical date.
-// Empty means the destination will stamp its own date on import.
-function pickDateAdded(book) {
-    if (book.date_started) return formatDate(book.date_started);
-    if (book.shelf === "read" && book.date_finished) {
-        return formatDate(book.date_finished);
-    }
-    return "";
-}
-
-// Convert "Ursula Le Guin" into "Le Guin, Ursula" for Goodreads' "Author l-f"
-// column.
-//
-// This is deliberately conservative. Splitting a display name into first and
-// last parts is guesswork, and getting it wrong looks worse than leaving the
-// column empty — importers match on ISBN and title first, so this field is a
-// nicety rather than load-bearing. We only handle the unambiguous two-word
-// case and bail out on everything else: multi-author strings (which our
-// scraper joins with ", "), names that already contain a comma, mononyms,
-// and long names where the surname boundary isn't obvious.
-function authorLastFirst(author) {
-    const name = String(author || "").trim();
-    if (!name || name.includes(",")) return "";
-    const parts = name.split(/\s+/);
-    if (parts.length !== 2) return "";
-    return `${parts[1]}, ${parts[0]}`;
+// Return {ten, thirteen} for whichever single ISBN Fable gave us, filling in
+// the other form where it exists. Either may be an empty string.
+function bothIsbnForms(isbn) {
+    const digits = isbnDigits(isbn);
+    if (digits.length === 10) return { ten: digits, thirteen: isbn10to13(digits) };
+    if (digits.length === 13) return { ten: isbn13to10(digits), thirteen: digits };
+    return { ten: "", thirteen: "" };
 }
 
 
-// ---------------------------------------------------------------------------
-// Target: Goodreads (the original path).
-// ---------------------------------------------------------------------------
-// The exact 26 columns goodreads.com/review/import accepts, in order. Every
-// column must be present even when empty or the importer rejects the file.
+// ===========================================================================
+// FORMAT 1 — Goodreads import (26 columns)
+// ===========================================================================
+// What goodreads.com/review/import accepts. Every column must be present even
+// when empty or the importer rejects the file. Note this is a different shape
+// from what Goodreads *exports*, which trips people up constantly.
 
-const GOODREADS_IMPORT_COLUMNS = [
-    "Title", "Author", "ISBN", "My Rating", "Average Rating", "Publisher",
-    "Binding", "Year Published", "Original Publication Year", "Date Read",
-    "Date Added", "Bookshelves", "Bookshelves with positions",
-    "Exclusive Shelf", "My Review", "Spoiler", "Private Notes", "Read Count",
-    "Recommended For", "Recommended By", "Owned Copies",
-    "Original Purchase Date", "Original Purchase Location", "Condition",
-    "Condition Description", "BCID",
-];
+const GOODREADS_IMPORT_FORMAT = {
+    columns: [
+        "Title", "Author", "ISBN", "My Rating", "Average Rating", "Publisher",
+        "Binding", "Year Published", "Original Publication Year", "Date Read",
+        "Date Added", "Bookshelves", "Bookshelves with positions",
+        "Exclusive Shelf", "My Review", "Spoiler", "Private Notes", "Read Count",
+        "Recommended For", "Recommended By", "Owned Copies",
+        "Original Purchase Date", "Original Purchase Location", "Condition",
+        "Condition Description", "BCID",
+    ],
+
+    // Columns not listed here are emitted empty.
+    mapRow(book) {
+        return {
+            "Title":           book.title || "",
+            "Author":          book.author || "",
+            // Passed through exactly as Fable gave it, hyphens and all. This is
+            // the one path that's already live for real users, so it stays
+            // byte-for-byte what it was before the formats were split out.
+            "ISBN":            formatISBN(book.isbn),
+            "My Rating":       book.rating || 0,
+            "Date Read":       formatDate(book.date_finished),
+            "Date Added":      pickDateAdded(book),
+            "Exclusive Shelf": book.shelf || "",
+            "Bookshelves":     book.shelf || "",
+        };
+    },
+};
+
+
+// ===========================================================================
+// FORMAT 2 — Goodreads export (23 columns)
+// ===========================================================================
+// What Goodreads produces when you export your library, and therefore what apps
+// with an "import from Goodreads" flow expect. StoryGraph uses this.
+//
+// The column list comes from a real 2026 export, NOT from documentation.
+// Published lists are wrong: they claim Average Rating is still present and that
+// Owned Copies was removed, when it's the other way round. Both lists happen to
+// be 23 columns long, so a column count check won't catch the difference — and
+// importers compare the header to decide whether a file really is a Goodreads
+// export, so getting it wrong means outright rejection.
+
+const GOODREADS_EXPORT_FORMAT = {
+    columns: [
+        "Book Id", "Title", "Author", "Author l-f", "Additional Authors",
+        "ISBN", "ISBN13", "My Rating", "Publisher", "Binding",
+        "Number of Pages", "Year Published", "Original Publication Year",
+        "Date Read", "Date Added", "Bookshelves", "Bookshelves with positions",
+        "Exclusive Shelf", "My Review", "Spoiler", "Private Notes", "Read Count",
+        "Owned Copies",
+    ],
+
+    mapRow(book) {
+        const { ten, thirteen } = bothIsbnForms(book.isbn);
+
+        return {
+            // Goodreads' own internal identifier. We have Fable's UUID, which
+            // would mean nothing here. StoryGraph copes fine with this empty and
+            // matches on ISBN instead. Pagebound does NOT, which is why
+            // Pagebound uses the StoryGraph format rather than this one.
+            "Book Id":         "",
+            "Title":           book.title || "",
+            "Author":          book.author || "",
+            "Author l-f":      authorLastFirst(book.author),
+            // Both columns get filled, as a real export does. An empty side
+            // still carries the ="" wrapper rather than being blank, again
+            // matching what Goodreads actually writes.
+            "ISBN":            ten ? formatISBN(ten) : '=""',
+            "ISBN13":          thirteen ? formatISBN(thirteen) : '=""',
+            // A real export writes rated books with a decimal and unrated ones
+            // as a bare 0. Fractions are passed through rather than rounded:
+            // StoryGraph stores quarter stars natively, so a half star may well
+            // survive this route, and if it doesn't the destination rounds it
+            // for us anyway.
+            "My Rating":       book.rating ? decimalRating(book.rating) : 0,
+            "Date Read":       formatDate(book.date_finished),
+            "Date Added":      pickDateAdded(book),
+            "Bookshelves":     book.shelf || "",
+            "Exclusive Shelf": book.shelf || "",
+            "Read Count":      book.shelf === "read" ? 1 : 0,
+            // Always 0 in a real export unless you track physical copies, which
+            // Fable has no concept of.
+            "Owned Copies":    0,
+        };
+    },
+};
+
+
+// ===========================================================================
+// FORMAT 3 — StoryGraph export (23 columns)
+// ===========================================================================
+// What StoryGraph produces. Pagebound accepts it, and it suits Fable data better
+// than the Goodreads shape does:
+//
+//   * books are identified by ISBN/UID — a plain ISBN, no internal id to look up
+//   * Star Rating holds fractions, so half stars survive as half stars
+//   * Date Added is honoured, so start dates live
+//
+// Column list taken verbatim from a real August 2026 export. Note the ISBN is
+// written BARE here, with no ="..." wrapper — the opposite of both Goodreads
+// formats.
+
+const STORYGRAPH_FORMAT = {
+    columns: [
+        "Title", "Authors", "Contributors", "ISBN/UID", "Format", "Read Status",
+        "Date Added", "Last Date Read", "Dates Read", "Read Count", "Moods",
+        "Pace", "Character- or Plot-Driven?", "Strong Character Development?",
+        "Loveable Characters?", "Diverse Characters?", "Flawed Characters?",
+        "Star Rating", "Review", "Content Warnings",
+        "Content Warning Description", "Tags", "Owned?",
+    ],
+
+    mapRow(book) {
+        const { thirteen } = bothIsbnForms(book.isbn);
+        const finished = formatDate(book.date_finished);
+
+        return {
+            "Title":       book.title || "",
+            // Fable joins multiple authors with ", " and we pass that through
+            // rather than guessing which is primary. Matching is ISBN-led, so
+            // this is display data.
+            "Authors":     book.author || "",
+            "Contributors": "",
+            // StoryGraph uses the 13-digit form, unwrapped.
+            "ISBN/UID":    thirteen,
+            // Fable doesn't tell us the edition format (hardcover, digital…).
+            "Format":      "",
+            // Our internal shelf names already match StoryGraph's spelling.
+            // read and currently-reading were confirmed against a real export;
+            // to-read was verified by a successful import into Pagebound, where
+            // it landed on the TBR list.
+            "Read Status": book.shelf || "",
+            "Date Added":  pickDateAdded(book),
+            // A real export repeats the finish date across both columns: Dates
+            // Read lists every read-through, Last Date Read is the most recent.
+            // We only ever know of one.
+            "Last Date Read": finished,
+            "Dates Read":     finished,
+            "Read Count":  book.shelf === "read" ? 1 : 0,
+            // Unrated is EMPTY here, not zero — the opposite of the Goodreads
+            // formats. Fractions pass through untouched, which is the whole
+            // reason this format is worth having.
+            "Star Rating": book.rating ? decimalRating(book.rating) : "",
+            "Review":      "",
+            "Tags":        "",
+            "Owned?":      "No",
+        };
+    },
+};
+
+
+// ===========================================================================
+// DESTINATIONS
+// ===========================================================================
 
 const goodreads = {
     id: "goodreads",
     label: "Goodreads",
     filename: "goodreads_import.csv",
     blurb: "The original path. Ratings, shelves and finish dates carry over.",
-    columns: GOODREADS_IMPORT_COLUMNS,
+    ...GOODREADS_IMPORT_FORMAT,
 
     // Each step is {before, href, linkText, after}. Only `before` is required;
     // the link and `after` let a step put a link mid-sentence rather than
@@ -172,63 +338,56 @@ const goodreads = {
         "<strong>Date Read</strong> comes from your Fable <em>finish</em> date.",
         "<strong>Start dates don't survive.</strong> We put your Fable start " +
         "date in Date Added, but Goodreads throws that value away on import " +
-        "and stamps its own. Nothing we can do from this end.",
-        "<strong>Reviews aren't accepted</strong> by Goodreads' importer. " +
-        "Only ratings, shelves and dates come across.",
+        "and stamps its own. Nothing we can do from this end. If your start " +
+        "dates matter, StoryGraph keeps them.",
+        "<strong>Reviews aren't accepted</strong> by Goodreads' importer, and " +
+        "half-star ratings get rounded because Goodreads only does whole stars.",
     ],
-
-    // Columns not listed here are emitted empty.
-    mapRow(book) {
-        return {
-            "Title":           book.title || "",
-            "Author":          book.author || "",
-            "ISBN":            formatISBN(book.isbn),
-            "My Rating":       book.rating || 0,
-            "Date Read":       formatDate(book.date_finished),
-            "Date Added":      pickDateAdded(book),
-            "Exclusive Shelf": book.shelf || "",
-            "Bookshelves":     book.shelf || "",
-        };
-    },
 };
 
+const storygraph = {
+    id: "storygraph",
+    label: "StoryGraph",
+    // StoryGraph imports a Goodreads file, so this is named the way Goodreads
+    // names its own export. Confusing otherwise, given the destination.
+    filename: "goodreads_library_export.csv",
+    blurb: "Keeps your start dates. Import it as a Goodreads file.",
+    ...GOODREADS_EXPORT_FORMAT,
 
-// ---------------------------------------------------------------------------
-// Target: Pagebound.
-// ---------------------------------------------------------------------------
-// Pagebound imports a Goodreads *export* file ("you can import your Goodreads
-// library via CSV, and we will transfer whatever data is available"), so we
-// emit that shape rather than inventing a Pagebound-specific format.
-//
-// These are the 23 columns a current Goodreads export carries, taken from a
-// real 2026 export rather than from documentation — the published column lists
-// are out of date and cost us a rejected import. Goodreads dropped eight
-// columns in mid-2022: Average Rating plus the seven from Recommended For to
-// BCID. Owned Copies survived and is last.
-//
-// Pagebound checks this header to decide whether a file really is a Goodreads
-// export, so the names and their order have to match exactly. Getting the
-// column *count* right isn't enough.
+    instructions: [
+        {
+            before: "Open ",
+            href: "https://app.thestorygraph.com/",
+            linkText: "app.thestorygraph.com",
+            after: ", then Manage Account and find the import section.",
+        },
+        {
+            before: "Choose the <strong>Goodreads</strong> import option. " +
+                    "StoryGraph has no StoryGraph import, and this file is in " +
+                    "Goodreads' export format, so that's the right one.",
+        },
+        { before: "Upload the file and give it a few minutes." },
+    ],
 
-const GOODREADS_EXPORT_COLUMNS = [
-    "Book Id", "Title", "Author", "Author l-f", "Additional Authors",
-    "ISBN", "ISBN13", "My Rating", "Publisher", "Binding",
-    "Number of Pages", "Year Published", "Original Publication Year",
-    "Date Read", "Date Added", "Bookshelves", "Bookshelves with positions",
-    "Exclusive Shelf", "My Review", "Spoiler", "Private Notes", "Read Count",
-    "Owned Copies",
-];
+    notes: [
+        "<strong>Your start dates survive.</strong> StoryGraph honours Date " +
+        "Added, where Goodreads discards it.",
+        "<strong>Date Read</strong> is your Fable finish date and " +
+        "<strong>Date Added</strong> your Fable start date.",
+        "Fable doesn't give us publisher, page count or publication year, so " +
+        "those are left empty and StoryGraph fills them in from the ISBN.",
+    ],
+};
 
 const pagebound = {
     id: "pagebound",
     label: "Pagebound",
-    // Named the way Goodreads names its own export. Pagebound asks for "a
-    // Goodreads or StoryGraph file", so this is both the least confusing thing
-    // to hand their upload box and one fewer difference for their source
-    // detection to trip over.
-    filename: "goodreads_library_export.csv",
-    blurb: "Goes direct, so your start dates survive. Skips Goodreads entirely.",
-    columns: GOODREADS_EXPORT_COLUMNS,
+    // Pagebound accepts a Goodreads file too, but only when Goodreads' own
+    // Book Id is present, and we can't know it. The StoryGraph shape matches on
+    // ISBN instead, so that's the route we use — hence the filename.
+    filename: "storygraph_library_export.csv",
+    blurb: "Keeps start dates and half-star ratings. Import it as a StoryGraph file.",
+    ...STORYGRAPH_FORMAT,
 
     instructions: [
         {
@@ -239,180 +398,22 @@ const pagebound = {
                    "then Import library.",
         },
         {
-            before: "Click Choose file and pick the file you just downloaded. " +
-                    "Pagebound imports Goodreads CSVs, and this file is in " +
-                    "exactly that format, which is why it works.",
+            before: "Choose the <strong>StoryGraph</strong> option, not the " +
+                    "Goodreads one. This file is in StoryGraph's format.",
         },
         {
-            before: "Start the import. It takes a few minutes, and Pagebound " +
-                    "lets you know once your books are in.",
+            before: "Click Choose file, upload, and start the import. It takes " +
+                    "a few minutes and Pagebound tells you when it's done.",
         },
     ],
 
     notes: [
-        "<strong>Your start dates survive this route.</strong> Going straight " +
-        "to Pagebound skips Goodreads, and Goodreads was the thing that " +
-        "discarded them.",
-        "<strong>Date Read</strong> comes from your Fable <em>finish</em> date, " +
-        "and <strong>Date Added</strong> from your Fable <em>start</em> date.",
-        "We don't have publisher, page count or publication year from Fable, " +
-        "so those columns are left empty. Pagebound fills in what it can from " +
-        "the ISBN.",
-    ],
-
-    mapRow(book) {
-        const digits = isbnDigits(book.isbn);
-
-        // Fill both ISBN columns the way a real export does, converting
-        // whichever form Fable gave us into the other. An importer reading
-        // either column then finds a value.
-        //
-        // The empty side still gets the ="" wrapper rather than a bare empty
-        // cell, because that's what a real export does — a book with no ISBN
-        // comes out as ="" in both columns, not as nothing.
-        let ten = "", thirteen = "";
-        if (digits.length === 10) {
-            ten = digits;
-            thirteen = isbn10to13(digits);
-        } else if (digits.length === 13) {
-            thirteen = digits;
-            ten = isbn13to10(digits);
-        }
-        const isbn10 = ten ? formatISBN(ten) : '=""';
-        const isbn13 = thirteen ? formatISBN(thirteen) : '=""';
-
-        return {
-            // Book Id is Goodreads' own internal identifier. We have Fable's
-            // UUID instead, which would mean nothing here, so leave it empty
-            // and let Pagebound match on ISBN and title.
-            "Book Id":         "",
-            "Title":           book.title || "",
-            "Author":          book.author || "",
-            "Author l-f":      authorLastFirst(book.author),
-            "ISBN":            isbn10,
-            "ISBN13":          isbn13,
-            // A real export writes rated books with one decimal place ("3.0")
-            // and unrated ones as a bare "0". Mirroring that exactly.
-            //
-            // Fable supports half stars and Goodreads doesn't, so we round to
-            // the nearest whole star. The column is clearly decimal-capable, so
-            // passing 3.5 through may well work, but no real export contains a
-            // half value to confirm it against — not worth risking on the same
-            // change that's trying to get the import accepted at all.
-            "My Rating":       book.rating ? `${Math.round(book.rating)}.0` : 0,
-            "Date Read":       formatDate(book.date_finished),
-            "Date Added":      pickDateAdded(book),
-            "Bookshelves":     book.shelf || "",
-            "Exclusive Shelf": book.shelf || "",
-            // Goodreads exports use 1 for a book you've finished and 0
-            // otherwise. Mirroring that keeps read/unread unambiguous.
-            "Read Count":      book.shelf === "read" ? 1 : 0,
-            // Always 0 in a real export unless you track physical copies,
-            // which Fable has no concept of.
-            "Owned Copies":    0,
-        };
-    },
-};
-
-
-// ---------------------------------------------------------------------------
-// Target: StoryGraph.
-// ---------------------------------------------------------------------------
-// Column list taken verbatim from a real StoryGraph export (August 2026), for
-// the same reason as the Goodreads one: documented lists were wrong.
-//
-// StoryGraph's format is a better fit for Fable data than Goodreads' is:
-//   * the identifier column is ISBN/UID, a plain ISBN, with no service-internal
-//     id to look up — which is what blocks the Goodreads route into Pagebound
-//   * Star Rating holds fractions, so Fable's half stars survive unrounded
-//   * Date Added is a real column that importers honour, so start dates live
-//
-// Note the ISBN here is written bare, NOT wrapped as ="..." the way Goodreads
-// does it. Getting that wrong would likely break matching.
-
-const STORYGRAPH_COLUMNS = [
-    "Title", "Authors", "Contributors", "ISBN/UID", "Format", "Read Status",
-    "Date Added", "Last Date Read", "Dates Read", "Read Count", "Moods",
-    "Pace", "Character- or Plot-Driven?", "Strong Character Development?",
-    "Loveable Characters?", "Diverse Characters?", "Flawed Characters?",
-    "Star Rating", "Review", "Content Warnings",
-    "Content Warning Description", "Tags", "Owned?",
-];
-
-// StoryGraph writes whole ratings with one decimal place ("3.0") and keeps
-// quarter and half values as they are ("2.5", "3.25"). An unrated book is left
-// EMPTY rather than zero — the opposite of Goodreads, where unrated is 0.
-function storygraphRating(rating) {
-    if (!rating) return "";
-    return Number.isInteger(rating) ? `${rating}.0` : String(rating);
-}
-
-const storygraph = {
-    id: "storygraph",
-    label: "StoryGraph",
-    filename: "storygraph_library_export.csv",
-    blurb: "Keeps half-star ratings and start dates. The highest-fidelity option.",
-    columns: STORYGRAPH_COLUMNS,
-
-    instructions: [
-        {
-            before: "Open StoryGraph and go to ",
-            href: "https://app.thestorygraph.com/",
-            linkText: "app.thestorygraph.com",
-            after: ", then Manage Account and the Import section.",
-        },
-        { before: "Choose the option to import a StoryGraph CSV and upload the file you just downloaded." },
-        { before: "Give it a few minutes. StoryGraph emails you when it's finished." },
-    ],
-
-    notes: [
-        "<strong>This is the option that loses the least.</strong> Half-star " +
-        "ratings survive as half stars, and your start dates come across as " +
-        "Date Added.",
+        "<strong>This option loses the least.</strong> Half-star ratings stay " +
+        "as half stars and your start dates come across.",
         "<strong>Last Date Read</strong> is your Fable finish date and " +
         "<strong>Date Added</strong> your Fable start date.",
-        "Fable doesn't tell us the edition format, page count or publisher, so " +
-        "those columns are left empty and StoryGraph fills them in from the ISBN.",
+        "Books on your To-Read shelf land on your Pagebound TBR list.",
     ],
-
-    mapRow(book) {
-        const digits = isbnDigits(book.isbn);
-
-        // StoryGraph uses the 13-digit form. Every ISBN-10 converts to a 978
-        // ISBN-13, so prefer 13 and fall back to whatever we have.
-        let uid = "";
-        if (digits.length === 13) uid = digits;
-        else if (digits.length === 10) uid = isbn10to13(digits) || digits;
-
-        const finished = formatDate(book.date_finished);
-
-        return {
-            "Title":       book.title || "",
-            // Fable joins multiple authors with ", " and we pass that through
-            // rather than guessing which is primary. Matching is ISBN-led, so
-            // this is display data.
-            "Authors":     book.author || "",
-            "Contributors": "",
-            "ISBN/UID":    uid,
-            "Format":      "",
-            // Our internal shelf names already use StoryGraph's spelling for
-            // read and currently-reading, confirmed against a real export.
-            "Read Status": book.shelf || "",
-            "Date Added":  pickDateAdded(book),
-            // A real export repeats the finish date in both columns: Dates Read
-            // is the list of every read-through, Last Date Read the most recent.
-            // We only know of one, so they're the same value.
-            "Last Date Read": finished,
-            "Dates Read":     finished,
-            "Read Count":  book.shelf === "read" ? 1 : 0,
-            // Fable has no equivalent of StoryGraph's mood and pace tagging,
-            // so every one of those columns stays empty.
-            "Star Rating": storygraphRating(book.rating),
-            "Review":      "",
-            "Tags":        "",
-            "Owned?":      "No",
-        };
-    },
 };
 
 
@@ -426,7 +427,7 @@ export const TARGETS = [goodreads, storygraph, pagebound];
 
 export const DEFAULT_TARGET_ID = "goodreads";
 
-// Look up a target by id, falling back to the default rather than throwing —
+// Look up a destination by id, falling back to the default rather than throwing —
 // a stale id in storage shouldn't leave the user stuck with a dead page.
 export function getTarget(id) {
     return TARGETS.find((t) => t.id === id)
