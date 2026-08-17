@@ -51,7 +51,51 @@ function formatISBN(isbn) {
 // Strip anything that isn't a digit or X so we can measure an ISBN's length
 // reliably. Fable sometimes returns hyphenated values.
 function isbnDigits(isbn) {
-    return String(isbn || "").replace(/[^0-9Xx]/g, "");
+    return String(isbn || "").replace(/[^0-9Xx]/g, "").toUpperCase();
+}
+
+// ---------------------------------------------------------------------------
+// ISBN-10 <-> ISBN-13 conversion.
+// ---------------------------------------------------------------------------
+// A real Goodreads export fills both the ISBN and ISBN13 columns for nearly
+// every book. Fable only gives us one of the two, and leaving the other empty
+// means an importer that reads the column we didn't fill has nothing to match
+// on. The two forms convert deterministically, so we can supply both.
+//
+// The conversion is pure arithmetic on the check digit; it invents no
+// information. Only 978-prefixed ISBN-13s have a 10-digit equivalent — the 979
+// range has none, so we leave that side empty for those.
+
+// EAN-13 check digit: alternate weights of 1 and 3 across the first 12 digits.
+function ean13CheckDigit(twelve) {
+    let sum = 0;
+    for (let i = 0; i < 12; i++) {
+        sum += Number(twelve[i]) * (i % 2 === 0 ? 1 : 3);
+    }
+    return String((10 - (sum % 10)) % 10);
+}
+
+// ISBN-10 check digit: weights 10 down to 2, modulo 11, with 10 written as X.
+function isbn10CheckDigit(nine) {
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+        sum += Number(nine[i]) * (10 - i);
+    }
+    const check = (11 - (sum % 11)) % 11;
+    return check === 10 ? "X" : String(check);
+}
+
+function isbn10to13(isbn10) {
+    if (!/^\d{9}[\dX]$/.test(isbn10)) return "";
+    const twelve = `978${isbn10.slice(0, 9)}`;
+    return twelve + ean13CheckDigit(twelve);
+}
+
+function isbn13to10(isbn13) {
+    // Only the 978 range maps back to a 10-digit ISBN.
+    if (!/^978\d{10}$/.test(isbn13)) return "";
+    const nine = isbn13.slice(3, 12);
+    return nine + isbn10CheckDigit(nine);
 }
 
 // Pick the best value for the "Date Added" column.
@@ -219,14 +263,23 @@ const pagebound = {
     mapRow(book) {
         const digits = isbnDigits(book.isbn);
 
-        // A Goodreads export splits ISBNs across two columns by length. Fable
-        // gives us a single value, so route it to whichever column fits.
+        // Fill both ISBN columns the way a real export does, converting
+        // whichever form Fable gave us into the other. An importer reading
+        // either column then finds a value.
         //
         // The empty side still gets the ="" wrapper rather than a bare empty
         // cell, because that's what a real export does — a book with no ISBN
         // comes out as ="" in both columns, not as nothing.
-        const isbn10 = digits.length === 10 ? formatISBN(digits) : '=""';
-        const isbn13 = digits.length === 13 ? formatISBN(digits) : '=""';
+        let ten = "", thirteen = "";
+        if (digits.length === 10) {
+            ten = digits;
+            thirteen = isbn10to13(digits);
+        } else if (digits.length === 13) {
+            thirteen = digits;
+            ten = isbn13to10(digits);
+        }
+        const isbn10 = ten ? formatISBN(ten) : '=""';
+        const isbn13 = thirteen ? formatISBN(thirteen) : '=""';
 
         return {
             // Book Id is Goodreads' own internal identifier. We have Fable's
