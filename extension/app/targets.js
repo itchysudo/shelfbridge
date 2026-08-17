@@ -76,7 +76,14 @@ function pickDateAdded(book) {
 // Format a rating the way real exports do: a whole number gets one decimal
 // place ("3.0"), and fractions are left alone ("2.5", "3.25"). Fable supports
 // half stars, so we never round — every format here writes the rating column as
-// a decimal, and the destination can round it down itself if it must.
+// a decimal and we let the destination decide.
+//
+// What each destination actually does with a fraction, measured rather than
+// assumed:
+//   Goodreads   whole stars only, so it flattens them
+//   StoryGraph  its Goodreads importer rounds: 3.5 arrives as 4
+//   Pagebound   keeps halves (3.5 stays 3.5), rounds quarters (4.25 -> 4)
+// Fable only does halves, so Pagebound is the one route that loses nothing.
 function decimalRating(rating) {
     return Number.isInteger(rating) ? `${rating}.0` : String(rating);
 }
@@ -374,6 +381,10 @@ const storygraph = {
         "Added, where Goodreads discards it.",
         "<strong>Date Read</strong> is your Fable finish date and " +
         "<strong>Date Added</strong> your Fable start date.",
+        "<strong>Half stars get rounded to whole ones.</strong> StoryGraph " +
+        "stores quarter stars, but its Goodreads importer rounds on the way in, " +
+        "so a 3.5 arrives as a 4. That's their importer rather than anything we " +
+        "control. If your half stars matter, Pagebound keeps them.",
         "Fable doesn't give us publisher, page count or publication year, so " +
         "those are left empty and StoryGraph fills them in from the ISBN.",
     ],
@@ -408,8 +419,8 @@ const pagebound = {
     ],
 
     notes: [
-        "<strong>This option loses the least.</strong> Half-star ratings stay " +
-        "as half stars and your start dates come across.",
+        "<strong>This option loses the least.</strong> A 3.5 in Fable stays a " +
+        "3.5 here, which is the only route that manages it.",
         "<strong>Last Date Read</strong> is your Fable finish date and " +
         "<strong>Date Added</strong> your Fable start date.",
         "Books on your To-Read shelf land on your Pagebound TBR list.",
