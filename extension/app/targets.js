@@ -383,7 +383,10 @@ const storygraph = {
 
     summary: {
         keeps: ["Your shelves", "Whole-star ratings", "Finish dates"],
-        loses: ["Half stars", "Start dates"],
+        // "left blank" rather than just "start dates": StoryGraph does have the
+        // field and you can fill it in yourself afterwards. It's the transfer
+        // that can't carry it, not the app that lacks it.
+        loses: ["Half stars (rounded up)", "Start dates (left blank)"],
     },
 
     // The single most confusing thing about this option: you pick StoryGraph
@@ -438,7 +441,7 @@ const pagebound = {
     summary: {
         keeps: ["Your shelves", "Whole-star ratings", "Finish dates",
                 "Half-star ratings"],
-        loses: ["Start dates"],
+        loses: ["Start dates (left blank)"],
     },
 
     fileNote: "Your file will be called <code>storygraph_library_export.csv</code>. " +
