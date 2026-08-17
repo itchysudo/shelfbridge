@@ -283,15 +283,18 @@ h1, h2, h3 {
 }
 .btn-link:hover { color: var(--accent-dark); }
 
-/* Ko-fi's own brand colour, so the button reads as a Ko-fi button rather
-   than another primary action competing with Download. */
+/* The blue from the Ko-fi widget config, so the button matches the one on the
+   Ko-fi page and reads as a separate thing from the teal Download action.
+   Dark text rather than white: white on this blue is only 2.2:1, which fails
+   WCAG AA, whereas our ink colour on it is 6.6:1. Swap `color` to #fff if you
+   prefer to match Ko-fi's own button exactly and accept the contrast. */
 .btn-kofi {
-    background: #ff5e5b;
-    color: white;
+    background: #00b9fe;
+    color: var(--ink);
     box-shadow: var(--shadow-sm);
 }
 .btn-kofi:hover {
-    background: #e54e4b;
+    background: #00a2dd;
     transform: translateY(-1px);
     box-shadow: var(--shadow-lift);
 }

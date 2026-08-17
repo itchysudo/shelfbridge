@@ -19,8 +19,9 @@ import {
 // link configured can't ship a dead button.
 //
 // Deliberately a plain link rather than Ko-fi's embed widget: the widget loads
-// a remote script, which Manifest V3 forbids and the Web Store would reject.
-const KOFI_URL = "";
+// a remote script (storage.ko-fi.com/.../overlay-widget.js), which Manifest V3
+// forbids and the Web Store would reject. Same destination, no remote code.
+const KOFI_URL = "https://ko-fi.com/itchysudodev";
 
 
 // ---------------------------------------------------------------------------
