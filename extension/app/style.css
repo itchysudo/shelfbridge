@@ -283,6 +283,98 @@ h1, h2, h3 {
 }
 .btn-link:hover { color: var(--accent-dark); }
 
+/* Ko-fi's own brand colour, so the button reads as a Ko-fi button rather
+   than another primary action competing with Download. */
+.btn-kofi {
+    background: #ff5e5b;
+    color: white;
+    box-shadow: var(--shadow-sm);
+}
+.btn-kofi:hover {
+    background: #e54e4b;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lift);
+}
+.btn-kofi:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+/* ---------- Export target picker ---------- */
+
+.target-picker {
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    padding: 1rem 1.25rem 1.25rem;
+    margin: 1.5rem 0 0.5rem;
+    background: var(--card-bg);
+}
+
+.target-picker legend {
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    padding: 0 0.4rem;
+    color: var(--ink);
+}
+
+/* Each option is a two-column grid: the radio, then label and blurb stacked
+   beside it so the blurb lines up under the label rather than the radio. */
+.target-option {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.15rem 0.7rem;
+    align-items: baseline;
+    padding: 0.65rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.target-option:hover { background: var(--accent-soft); }
+
+.target-option input {
+    grid-row: 1 / span 2;
+    align-self: center;
+    accent-color: var(--accent);
+    width: 1.05rem;
+    height: 1.05rem;
+    cursor: pointer;
+}
+
+.target-label {
+    font-weight: 600;
+    color: var(--ink);
+}
+
+.target-blurb {
+    grid-column: 2;
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+/* ---------- Ko-fi support prompt ---------- */
+
+.kofi-box {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+    margin: 1.5rem 0 0.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--hairline);
+    border-radius: 12px;
+    background: var(--bg);
+}
+
+.kofi-text {
+    flex: 1 1 18rem;
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
 /* ---------- Book table ---------- */
 
 .book-table {

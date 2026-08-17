@@ -5,9 +5,22 @@
 
 import { runScrape } from "./scraper.js";
 import { generateCSV, downloadCSV } from "./transformer.js";
+import { TARGETS, DEFAULT_TARGET_ID, getTarget } from "./targets.js";
 import {
     getBooks, setBooks, updateBook, deleteBook,
 } from "./storage.js";
+
+
+// ---------------------------------------------------------------------------
+// Ko-fi support link.
+// ---------------------------------------------------------------------------
+// Set this to the full Ko-fi page URL to switch the support links on. Leave it
+// as an empty string and every Ko-fi element stays hidden, so a build with no
+// link configured can't ship a dead button.
+//
+// Deliberately a plain link rather than Ko-fi's embed widget: the widget loads
+// a remote script, which Manifest V3 forbids and the Web Store would reject.
+const KOFI_URL = "";
 
 
 // ---------------------------------------------------------------------------
@@ -294,6 +307,10 @@ function updateSummary() {
 // Export view.
 // ---------------------------------------------------------------------------
 
+// Which destination the user has picked. Resets to the default each time the
+// app is opened, which is fine — it's one click to change.
+let selectedTargetId = DEFAULT_TARGET_ID;
+
 async function renderExport() {
     const books = await getBooks();
     document.getElementById("export-count").textContent = books.length;
@@ -306,6 +323,58 @@ async function renderExport() {
             <td>${b.rating || ""}</td>
         </tr>
     `).join("");
+
+    renderTargetPicker();
+    renderTargetDetails();
+
+    // Hide the Ko-fi prompt again on re-entry so it only ever appears as a
+    // response to an actual download.
+    document.getElementById("kofi-export").hidden = true;
+}
+
+// Build one radio option per registered target.
+function renderTargetPicker() {
+    const wrap = document.getElementById("target-options");
+    wrap.innerHTML = TARGETS.map((t) => `
+        <label class="target-option">
+            <input type="radio" name="target" value="${escapeHTML(t.id)}"
+                   ${t.id === selectedTargetId ? "checked" : ""}>
+            <span class="target-label">${escapeHTML(t.label)}</span>
+            <span class="target-blurb">${escapeHTML(t.blurb)}</span>
+        </label>
+    `).join("");
+
+    wrap.querySelectorAll('input[name="target"]').forEach((input) => {
+        input.addEventListener("change", () => {
+            selectedTargetId = input.value;
+            renderTargetDetails();
+            document.getElementById("kofi-export").hidden = true;
+        });
+    });
+}
+
+// Swap the button label, heading, steps and caveats to match the chosen
+// target. The steps and notes come from targets.js, which is our own content
+// rather than anything scraped, so the small amount of markup in them is
+// inserted as HTML on purpose.
+function renderTargetDetails() {
+    const target = getTarget(selectedTargetId);
+
+    document.getElementById("download-btn").textContent =
+        `Download ${target.label} file`;
+    document.getElementById("import-heading").textContent =
+        `How to import into ${target.label}`;
+
+    document.getElementById("import-steps").innerHTML =
+        target.instructions.map((step) => {
+            const before = escapeHTML(step.before || "");
+            if (!step.href) return `<li>${before}</li>`;
+            const link = `<a href="${escapeHTML(step.href)}" target="_blank" rel="noopener">${escapeHTML(step.linkText || step.href)}</a>`;
+            return `<li>${before}${link}${escapeHTML(step.after || "")}</li>`;
+        }).join("");
+
+    document.getElementById("import-notes").innerHTML =
+        target.notes.map((note) => `<li>${note}</li>`).join("");
 }
 
 async function doDownload() {
@@ -314,8 +383,13 @@ async function doDownload() {
         alert("There are no books to export yet.");
         return;
     }
-    const csv = generateCSV(books);
-    downloadCSV(csv);
+    const target = getTarget(selectedTargetId);
+    const csv = generateCSV(books, target.id);
+    downloadCSV(csv, target.filename);
+
+    // The download is the moment the tool has actually delivered something,
+    // so that's when we ask, not before.
+    if (KOFI_URL) document.getElementById("kofi-export").hidden = false;
 }
 
 
@@ -330,6 +404,22 @@ function showSaved() {
     el.classList.add("visible");
     clearTimeout(savedTimer);
     savedTimer = setTimeout(() => el.classList.remove("visible"), 1500);
+}
+
+
+// ---------------------------------------------------------------------------
+// Ko-fi links.
+// ---------------------------------------------------------------------------
+
+// Point both Ko-fi links at KOFI_URL. With no URL set, the About paragraph
+// stays hidden and the export prompt never unhides, so nothing half-wired
+// reaches a user.
+function wireKofiLinks() {
+    if (!KOFI_URL) return;
+
+    document.getElementById("kofi-export-link").href = KOFI_URL;
+    document.getElementById("kofi-about-link").href = KOFI_URL;
+    document.getElementById("kofi-about").hidden = false;
 }
 
 
@@ -368,6 +458,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     wireLibraryEvents();
     wireFilterEvents();
+    wireKofiLinks();
 
     // Decide which view to land on. If we have any saved books, default to
     // library (the user came back to review/export). Otherwise show intro.

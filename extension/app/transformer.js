@@ -1,48 +1,15 @@
-// ShelfBridge — Goodreads CSV generator.
+// ShelfBridge — CSV generator.
 //
-// Builds the exact 26-column CSV that Goodreads' import endpoint accepts.
-// Mirrors the Python `transformer.py` in the Flask version — keep them in
-// sync if you change one.
+// This file owns the generic CSV mechanics only: escaping, assembling the
+// header and rows, and handing the finished file to the browser. Everything
+// destination-specific (columns, field mapping, filename) lives in
+// targets.js, so adding a new export destination doesn't touch this file.
 
-const GOODREADS_COLUMNS = [
-    "Title", "Author", "ISBN", "My Rating", "Average Rating", "Publisher",
-    "Binding", "Year Published", "Original Publication Year", "Date Read",
-    "Date Added", "Bookshelves", "Bookshelves with positions",
-    "Exclusive Shelf", "My Review", "Spoiler", "Private Notes", "Read Count",
-    "Recommended For", "Recommended By", "Owned Copies",
-    "Original Purchase Date", "Original Purchase Location", "Condition",
-    "Condition Description", "BCID",
-];
+import { getTarget } from "./targets.js";
 
-// Convert YYYY-MM-DD → YYYY/MM/DD (Goodreads' format). Empty input → "".
-function formatDate(s) {
-    if (!s) return "";
-    const datePart = String(s).split(" ")[0].split("T")[0];
-    return datePart.replace(/-/g, "/");
-}
-
-// Wrap an ISBN as ="..." so spreadsheet apps don't mangle the long number
-// (they'd otherwise convert to scientific notation or strip leading zeros).
-// Goodreads' importer understands and strips the wrapper.
-function formatISBN(isbn) {
-    if (!isbn) return "";
-    return `="${isbn}"`;
-}
-
-// Pick the best value for Goodreads' "Date Added" column.
-// Goodreads has no "Date Started" field, so we use Fable's start date as
-// the closest historical signal. Falls back to finish date for read books,
-// or empty otherwise. The /guide page explains this to users.
-function pickDateAdded(book) {
-    if (book.date_started) return formatDate(book.date_started);
-    if (book.shelf === "read" && book.date_finished) {
-        return formatDate(book.date_finished);
-    }
-    return "";
-}
-
-// CSV escaping: wrap in quotes if the value contains comma, quote, newline,
-// or a leading equals sign (for the ISBN wrapper). Double internal quotes.
+// CSV escaping: wrap in quotes if the value contains a comma, quote, newline,
+// or a leading equals sign (which is how we wrap ISBNs). Double any internal
+// quotes, per RFC 4180.
 function escapeCell(value) {
     const s = value == null ? "" : String(value);
     if (/[",\n\r]|^=/.test(s)) {
@@ -51,28 +18,26 @@ function escapeCell(value) {
     return s;
 }
 
-// Build one CSV row from a book.
-function buildRow(book) {
-    const values = {
-        "Title":            book.title || "",
-        "Author":           book.author || "",
-        "ISBN":             formatISBN(book.isbn),
-        "My Rating":        book.rating || 0,
-        "Date Read":        formatDate(book.date_finished),
-        "Date Added":       pickDateAdded(book),
-        "Exclusive Shelf":  book.shelf || "",
-        "Bookshelves":      book.shelf || "",
-        // All other columns default to "".
-    };
-    return GOODREADS_COLUMNS
+// Build one CSV row for the given target. Any column the target's mapRow
+// doesn't provide is emitted as an empty cell, which is what Goodreads-style
+// importers expect — the columns must all be present, just not all populated.
+function buildRow(book, target) {
+    const values = target.mapRow(book);
+    return target.columns
         .map((col) => escapeCell(values[col] ?? ""))
         .join(",");
 }
 
-export function generateCSV(books) {
-    const lines = [GOODREADS_COLUMNS.join(",")];
+// Generate the full CSV text for a target.
+//
+// `targetId` defaults to Goodreads so any older call site keeps working.
+// Rows are joined with CRLF because that's what Excel expects and what
+// Goodreads' own exports use.
+export function generateCSV(books, targetId) {
+    const target = getTarget(targetId);
+    const lines = [target.columns.join(",")];
     for (const book of books) {
-        lines.push(buildRow(book));
+        lines.push(buildRow(book, target));
     }
     return lines.join("\r\n") + "\r\n";
 }

@@ -147,33 +147,40 @@
         <section class="view card" data-view="export" hidden>
             <h2>Download &amp; import</h2>
             <p class="lead">
-                Almost done. Download the file below, then upload it to
-                Goodreads using the steps shown.
+                Almost done. Pick where your library is heading, then download
+                the file.
             </p>
 
+            <!-- Options are built from the target registry in targets.js, so
+                 adding a new destination needs no change here. -->
+            <fieldset class="target-picker">
+                <legend>Where are you importing to?</legend>
+                <div id="target-options"></div>
+            </fieldset>
+
             <div class="actions">
-                <button id="download-btn" class="btn btn-primary">Download Goodreads file</button>
+                <button id="download-btn" class="btn btn-primary">Download file</button>
                 <a href="#" id="back-to-library" class="btn btn-link">← Back to library</a>
             </div>
 
-            <h3>How to import into Goodreads</h3>
-            <ol class="explainer">
-                <li>Open <a href="https://www.goodreads.com/review/import" target="_blank" rel="noopener">goodreads.com/review/import</a> in a new tab.</li>
-                <li>Click <em>Choose File</em> and pick the file you just downloaded.</li>
-                <li>Click <em>Import books</em> and wait a minute or two.</li>
-            </ol>
+            <!-- Shown only once a file has been downloaded, and only if a
+                 Ko-fi link is configured. -->
+            <div id="kofi-export" class="kofi-box" hidden>
+                <p class="kofi-text">
+                    Got what you came for? ShelfBridge is free and always will
+                    be. If it saved you some time, you can chip in towards the
+                    coffee that built it.
+                </p>
+                <a id="kofi-export-link" class="btn btn-kofi" href="#" target="_blank" rel="noopener">
+                    Buy me a coffee
+                </a>
+            </div>
 
-            <p class="note">
-                <strong>A couple of things to know about the dates:</strong>
-            </p>
-            <ul class="explainer">
-                <li><strong>Date Read</strong> in Goodreads = your Fable <em>finish</em> date.</li>
-                <li><strong>Date Added</strong> in Goodreads is mapped from your Fable
-                    <em>start</em> date — Goodreads has no "date started" column of its
-                    own. Books on your <em>To-Read</em> shelf will have a blank Date Added.</li>
-                <li>Reviews are <strong>not</strong> accepted by Goodreads' CSV importer —
-                    only ratings, shelves, and dates come across.</li>
-            </ul>
+            <h3 id="import-heading">How to import</h3>
+            <ol class="explainer" id="import-steps"></ol>
+
+            <p class="note"><strong>Worth knowing:</strong></p>
+            <ul class="explainer" id="import-notes"></ul>
 
             <h3>Preview (<span id="export-count">0</span> books)</h3>
             <table class="book-table compact" id="export-preview">
@@ -281,6 +288,13 @@
                     <a href="https://github.com/itchysudo/shelfbridge/issues" target="_blank" rel="noopener">open an issue on GitHub</a>.
                     Searching past issues first is often the quickest way to
                     find an answer.
+                </p>
+
+                <!-- Unhidden by app.js only when a Ko-fi link is configured. -->
+                <p id="kofi-about" hidden>
+                    ShelfBridge is free and unfunded. If you'd like to support
+                    it, you can
+                    <a id="kofi-about-link" href="#" target="_blank" rel="noopener">buy me a coffee on Ko-fi</a>.
                 </p>
 
                 <div class="actions">
