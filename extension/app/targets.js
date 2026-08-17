@@ -289,6 +289,20 @@ const STORYGRAPH_FORMAT = {
     mapRow(book) {
         const { thirteen } = bothIsbnForms(book.isbn);
         const finished = formatDate(book.date_finished);
+        const started = formatDate(book.date_started);
+
+        // Dates Read is the one place in any of these formats that can carry a
+        // start date. A real StoryGraph export writes it as "start-finish" when
+        // both are known:
+        //
+        //   2026/01/05-2026/02/01   started and finished
+        //   2026/06/23              finish only, no start recorded
+        //   (empty)                 still reading
+        //
+        // Confirmed by setting a start date in StoryGraph by hand and exporting
+        // again: that single book's Dates Read became a range while every other
+        // row stayed a lone date.
+        const datesRead = (started && finished) ? `${started}-${finished}` : finished;
 
         return {
             "Title":       book.title || "",
@@ -307,11 +321,8 @@ const STORYGRAPH_FORMAT = {
             // it landed on the TBR list.
             "Read Status": book.shelf || "",
             "Date Added":  pickDateAdded(book),
-            // A real export repeats the finish date across both columns: Dates
-            // Read lists every read-through, Last Date Read is the most recent.
-            // We only ever know of one.
             "Last Date Read": finished,
-            "Dates Read":     finished,
+            "Dates Read":     datesRead,
             "Read Count":  book.shelf === "read" ? 1 : 0,
             // Unrated is EMPTY here, not zero — the opposite of the Goodreads
             // formats. Fractions pass through untouched, which is the whole
