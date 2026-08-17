@@ -316,12 +316,113 @@ const pagebound = {
 
 
 // ---------------------------------------------------------------------------
+// Target: StoryGraph.
+// ---------------------------------------------------------------------------
+// Column list taken verbatim from a real StoryGraph export (August 2026), for
+// the same reason as the Goodreads one: documented lists were wrong.
+//
+// StoryGraph's format is a better fit for Fable data than Goodreads' is:
+//   * the identifier column is ISBN/UID, a plain ISBN, with no service-internal
+//     id to look up — which is what blocks the Goodreads route into Pagebound
+//   * Star Rating holds fractions, so Fable's half stars survive unrounded
+//   * Date Added is a real column that importers honour, so start dates live
+//
+// Note the ISBN here is written bare, NOT wrapped as ="..." the way Goodreads
+// does it. Getting that wrong would likely break matching.
+
+const STORYGRAPH_COLUMNS = [
+    "Title", "Authors", "Contributors", "ISBN/UID", "Format", "Read Status",
+    "Date Added", "Last Date Read", "Dates Read", "Read Count", "Moods",
+    "Pace", "Character- or Plot-Driven?", "Strong Character Development?",
+    "Loveable Characters?", "Diverse Characters?", "Flawed Characters?",
+    "Star Rating", "Review", "Content Warnings",
+    "Content Warning Description", "Tags", "Owned?",
+];
+
+// StoryGraph writes whole ratings with one decimal place ("3.0") and keeps
+// quarter and half values as they are ("2.5", "3.25"). An unrated book is left
+// EMPTY rather than zero — the opposite of Goodreads, where unrated is 0.
+function storygraphRating(rating) {
+    if (!rating) return "";
+    return Number.isInteger(rating) ? `${rating}.0` : String(rating);
+}
+
+const storygraph = {
+    id: "storygraph",
+    label: "StoryGraph",
+    filename: "storygraph_library_export.csv",
+    blurb: "Keeps half-star ratings and start dates. The highest-fidelity option.",
+    columns: STORYGRAPH_COLUMNS,
+
+    instructions: [
+        {
+            before: "Open StoryGraph and go to ",
+            href: "https://app.thestorygraph.com/",
+            linkText: "app.thestorygraph.com",
+            after: ", then Manage Account and the Import section.",
+        },
+        { before: "Choose the option to import a StoryGraph CSV and upload the file you just downloaded." },
+        { before: "Give it a few minutes. StoryGraph emails you when it's finished." },
+    ],
+
+    notes: [
+        "<strong>This is the option that loses the least.</strong> Half-star " +
+        "ratings survive as half stars, and your start dates come across as " +
+        "Date Added.",
+        "<strong>Last Date Read</strong> is your Fable finish date and " +
+        "<strong>Date Added</strong> your Fable start date.",
+        "Fable doesn't tell us the edition format, page count or publisher, so " +
+        "those columns are left empty and StoryGraph fills them in from the ISBN.",
+    ],
+
+    mapRow(book) {
+        const digits = isbnDigits(book.isbn);
+
+        // StoryGraph uses the 13-digit form. Every ISBN-10 converts to a 978
+        // ISBN-13, so prefer 13 and fall back to whatever we have.
+        let uid = "";
+        if (digits.length === 13) uid = digits;
+        else if (digits.length === 10) uid = isbn10to13(digits) || digits;
+
+        const finished = formatDate(book.date_finished);
+
+        return {
+            "Title":       book.title || "",
+            // Fable joins multiple authors with ", " and we pass that through
+            // rather than guessing which is primary. Matching is ISBN-led, so
+            // this is display data.
+            "Authors":     book.author || "",
+            "Contributors": "",
+            "ISBN/UID":    uid,
+            "Format":      "",
+            // Our internal shelf names already use StoryGraph's spelling for
+            // read and currently-reading, confirmed against a real export.
+            "Read Status": book.shelf || "",
+            "Date Added":  pickDateAdded(book),
+            // A real export repeats the finish date in both columns: Dates Read
+            // is the list of every read-through, Last Date Read the most recent.
+            // We only know of one, so they're the same value.
+            "Last Date Read": finished,
+            "Dates Read":     finished,
+            "Read Count":  book.shelf === "read" ? 1 : 0,
+            // Fable has no equivalent of StoryGraph's mood and pace tagging,
+            // so every one of those columns stays empty.
+            "Star Rating": storygraphRating(book.rating),
+            "Review":      "",
+            "Tags":        "",
+            "Owned?":      "No",
+        };
+    },
+};
+
+
+// ---------------------------------------------------------------------------
 // Registry.
 // ---------------------------------------------------------------------------
 // Order here is the order shown in the export page's picker. Goodreads stays
 // first because it's the path most people arrive expecting.
 
-export const TARGETS = [goodreads, pagebound];
+export const TARGETS = [goodreads, storygraph, pagebound];
 
 export const DEFAULT_TARGET_ID = "goodreads";
 
