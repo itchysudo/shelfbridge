@@ -491,6 +491,18 @@ function showSaved() {
 
 
 // ---------------------------------------------------------------------------
+// Version number.
+// ---------------------------------------------------------------------------
+
+// Read the version straight from the manifest rather than hardcoding it in the
+// About panel, where it had gone stale across two releases.
+function showVersion() {
+    const el = document.getElementById("version");
+    if (el) el.textContent = chrome.runtime.getManifest().version;
+}
+
+
+// ---------------------------------------------------------------------------
 // Ko-fi links.
 // ---------------------------------------------------------------------------
 
@@ -542,6 +554,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     wireLibraryEvents();
     wireFilterEvents();
     wireKofiLinks();
+    showVersion();
 
     // Decide which view to land on. If we have any saved books, default to
     // library (the user came back to review/export). Otherwise show intro.
