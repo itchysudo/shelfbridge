@@ -38,7 +38,7 @@ Your books get stored in Chrome's local extension storage on your own computer. 
 - A Mac, Windows or Linux machine.
 - Python 3.11 or newer installed. If you don't already have it, grab it from <https://www.python.org/downloads/>. Windows users: make sure you tick the "Add Python to PATH" box during the installer.
 - A Fable account (the one whose library you want to export).
-- A Goodreads account (where the books are heading).
+- An account wherever the books are heading. The Python app currently exports for Goodreads only.
 
 You don't need to know how to code.
 
@@ -108,10 +108,13 @@ Everything in this table was checked by actually importing into a real account, 
 | Half-star ratings | rounded | rounded | **kept** |
 | Start dates | no | no | no |
 | Reviews | no | no | no |
+| Every book | yes | yes | only ones it already has |
 
 **Start dates don't come across anywhere.** All three apps can store one, but none of the file formats they'll accept has a column to carry it, so the field is left blank and you'd have to fill it in yourself. Finish dates are fine everywhere.
 
 **Half stars only survive on Pagebound.** Goodreads can't store them at all. StoryGraph can, but its Goodreads importer rounds them on the way in, so a 3.5 lands as a 4.
+
+**Pagebound may not take everything.** It only brings across books that already exist in its own library, so anything it hasn't got a record of gets skipped. Pagebound says this on its upload page, and it also calls that import route beta. Worth checking your count after an import.
 
 ### One thing that looks wrong but isn't
 
@@ -167,7 +170,7 @@ Click **More info** then **Run anyway**.
 Make sure you picked the matching option in that app: StoryGraph's *Goodreads* import for the StoryGraph file, and Pagebound's *StoryGraph* option for the Pagebound one. These apps check the file's header to work out where it came from, so uploading it under the wrong option will bounce it.
 
 **Hardly any of my books imported**
-Almost always the wrong option, as above. If it's definitely right, the app couldn't match the books in its own catalogue, which happens with unusual editions. Books without an ISBN are the most likely to be missed.
+First check you picked the matching option, as above. If you did, the app couldn't find your books in its own catalogue. Pagebound is explicit that it only transfers books already in its library, so expect some to be skipped there. Unusual editions and books with no ISBN are the most likely to be missed anywhere.
 
 ---
 

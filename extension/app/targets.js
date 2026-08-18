@@ -445,6 +445,11 @@ const pagebound = {
     // Pagebound accepts a Goodreads file too, but only when Goodreads' own
     // Book Id is present, and we can't know it. The StoryGraph shape matches on
     // ISBN instead, so that's the route we use — hence the filename.
+    //
+    // Pagebound labels this route beta on its own upload page and warns that it
+    // "only transfers books that already exist in Pagebound's library". That, not
+    // anything in our file, is why an import can come back with fewer books than
+    // you sent: their catalogue simply doesn't have the rest.
     filename: "storygraph_library_export.csv",
     blurb: "Keeps the most, including half stars.",
     ...STORYGRAPH_FORMAT,
@@ -452,7 +457,8 @@ const pagebound = {
     summary: {
         keeps: ["Your shelves", "Whole-star ratings", "Finish dates",
                 "Half-star ratings"],
-        loses: ["Start dates (left blank)"],
+        loses: ["Start dates (left blank)",
+                "Books Pagebound doesn't already have"],
     },
 
     fileNote: "Your file will be called <code>storygraph_library_export.csv</code>. " +
@@ -488,6 +494,11 @@ const pagebound = {
         "nothing in this file fills it in, so it stays blank. Anything you're " +
         "part-way through gets stamped with the date you imported instead.",
         "Books on your To-Read shelf land on your Pagebound TBR list.",
+        "<strong>You may not get everything.</strong> Pagebound only brings " +
+        "across books that already exist in its own library, so anything it " +
+        "hasn't got a record of is skipped. Pagebound says so on its own upload " +
+        "page, and it also calls this import route beta. Nothing we can do from " +
+        "this end, and it's worth checking your count afterwards.",
     ],
 };
 
