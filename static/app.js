@@ -54,24 +54,34 @@ async function startScrape(discovery) {
             // That's fine — just start polling and let the UI catch up.
         } else if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
-            showError(err.error || "Couldn't start the browser.");
+            showError(err.error || "We couldn't open the browser. Try again, or restart ShelfBridge.");
             return;
         }
     } catch (e) {
-        showError("Couldn't reach the server.");
+        showError(SERVER_UNREACHABLE);
         return;
     }
     startPolling();
 }
 
+const SERVER_UNREACHABLE = "We can't reach ShelfBridge. Check it's still running, then try again.";
+
+function setBusy(btn) {
+    /* Disable a button and show a spinner, keeping its width so the layout
+       doesn't jump. */
+    if (!btn) return;
+    btn.style.minWidth = `${btn.offsetWidth}px`;
+    btn.disabled = true;
+    btn.innerHTML = `<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Connecting…`;
+}
+
 async function confirmLogin() {
-    /* User has clicked "I'm logged in" — tell the server. */
-    const btn = document.getElementById("loggedin-btn");
-    if (btn) { btn.disabled = true; btn.textContent = "Working…"; }
+    /* User has selected "Connect again": tell the server. */
+    setBusy(document.getElementById("loggedin-btn"));
     try {
         await fetch("/scrape/confirm", { method: "POST" });
     } catch (e) {
-        showError("Couldn't reach the server.");
+        showError(SERVER_UNREACHABLE);
     }
     // The next status poll will move us into the "working" panel.
 }
@@ -87,11 +97,10 @@ async function submitListUrls() {
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
     if (urls.length === 0) {
-        alert("Please paste at least one shelf URL.");
+        alert("Paste at least one shelf link, then select Continue.");
         return;
     }
-    const btn = document.getElementById("submit-urls-btn");
-    if (btn) { btn.disabled = true; btn.textContent = "Working…"; }
+    setBusy(document.getElementById("submit-urls-btn"));
 
     try {
         const resp = await fetch("/scrape/list_urls", {
@@ -101,11 +110,11 @@ async function submitListUrls() {
         });
         if (!resp.ok) {
             const err = await resp.json().catch(() => ({}));
-            showError(err.error || "Couldn't submit shelf URLs.");
+            showError(err.error || "We couldn't use those shelf links. Check them and try again.");
             return;
         }
     } catch (e) {
-        showError("Couldn't reach the server.");
+        showError(SERVER_UNREACHABLE);
         return;
     }
     // Next poll will move us into "scraping".
@@ -136,7 +145,7 @@ async function pollOnce() {
 }
 
 function renderStatus(status) {
-    /* Map server status → which panel to show + per-panel content. */
+    /* Map server status to the panel to show + per-panel content. */
     switch (status.status) {
         case "browser_opening":
             showPanel("browser_opening");
@@ -157,8 +166,8 @@ function renderStatus(status) {
         case "discovering": {
             showPanel("working");
             const heading = status.mode === "discovery"
-                ? "Capturing pages for inspection…"
-                : "Reading your library…";
+                ? "Capturing pages for inspection"
+                : "Reading your library";
             setText("working-heading", heading);
             setText("working-message", status.message);
             const detail = document.getElementById("working-detail");
@@ -177,7 +186,7 @@ function renderStatus(status) {
             break;
 
         case "error":
-            showError(status.message || "Something went wrong.");
+            showError(status.message || "Check you're signed in to Fable, then try again.");
             stopPolling();
             break;
 
@@ -251,7 +260,10 @@ function initLibraryPage() {
                 // (server side already cleared it above).
                 const cell = input.closest("td");
                 const badge = cell && cell.querySelector(".precision-badge");
-                if (badge) badge.remove();
+                if (badge) {
+                    badge.remove();
+                    updateSummary();
+                }
             }
             showSaved();
         }
@@ -267,12 +279,20 @@ function initLibraryPage() {
         const bookId = row.dataset.bookId;
         const clicked = Number(star.dataset.value);
         const current = Number(stars.dataset.value);
-        // Click the same star you're on → clear the rating to 0.
+        // Click the same star you're on to clear the rating to 0.
         const newRating = (clicked === current) ? 0 : clicked;
 
         const updated = await patchBook(bookId, { rating: newRating });
         if (updated) {
             stars.dataset.value = newRating;
+            // Repaint each star's filled or empty state.
+            stars.querySelectorAll(".star").forEach((s) => {
+                const filled = Number(s.dataset.value) <= newRating;
+                s.classList.toggle("is-full", filled);
+                s.classList.toggle("is-empty", !filled);
+            });
+            stars.setAttribute("aria-label",
+                newRating ? `Rating: ${newRating} of 5` : "Not rated");
             showSaved();
         }
     });
@@ -284,7 +304,7 @@ function initLibraryPage() {
 
         const row = btn.closest("tr");
         const title = row.querySelector('[data-field="title"]').value;
-        if (!confirm(`Remove "${title}" from your library?`)) return;
+        if (!confirm(`Remove "${title}"? You can't undo this.`)) return;
 
         const bookId = row.dataset.bookId;
         const response = await fetch(`/api/books/${bookId}`,
@@ -294,7 +314,7 @@ function initLibraryPage() {
             updateSummary();
             showSaved();
         } else {
-            alert("Couldn't delete that book. Please try again.");
+            alert("That book wasn't removed. Try again.");
         }
     });
 
@@ -304,9 +324,12 @@ function initLibraryPage() {
         filterBar.addEventListener("click", (event) => {
             const btn = event.target.closest(".filter-btn");
             if (!btn) return;
-            filterBar.querySelectorAll(".filter-btn")
-                     .forEach((b) => b.classList.remove("active"));
+            filterBar.querySelectorAll(".filter-btn").forEach((b) => {
+                b.classList.remove("active");
+                b.setAttribute("aria-pressed", "false");
+            });
             btn.classList.add("active");
+            btn.setAttribute("aria-pressed", "true");
             applyActiveFilter();
         });
     }
@@ -328,12 +351,12 @@ async function patchBook(bookId, changes) {
         });
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
-            alert(err.error || "Save failed — please try again.");
+            alert(err.error || "That change didn't save. Try again.");
             return null;
         }
         return await response.json();
     } catch (e) {
-        alert("Couldn't reach the server. Is it still running?");
+        alert(SERVER_UNREACHABLE);
         return null;
     }
 }
@@ -351,20 +374,25 @@ function applyActiveFilter() {
 
 
 function updateSummary() {
-    /* Recount the visible rows by shelf and update the summary line. */
-    const rows = Array.from(document.querySelectorAll("#book-tbody tr"))
-                      .filter((r) => !r.hidden);
-    const total = rows.length;
-    const counts = { "read": 0, "currently-reading": 0, "to-read": 0 };
+    /* Update the per-shelf counts in the filter pills (always the totals,
+       whichever filter is active) and the summary line (visible rows). */
+    const rows = Array.from(document.querySelectorAll("#book-tbody tr"));
+    const counts = { "all": rows.length, "read": 0, "currently-reading": 0, "to-read": 0 };
     rows.forEach((r) => {
         if (counts[r.dataset.shelf] !== undefined) counts[r.dataset.shelf]++;
     });
+    document.querySelectorAll(".filter-btn").forEach((btn) => {
+        const el = btn.querySelector(".filter-count");
+        if (el) el.textContent = counts[btn.dataset.filter] ?? 0;
+    });
+
+    const visible = rows.filter((r) => !r.hidden);
+    const toCheck = visible.reduce(
+        (n, r) => n + r.querySelectorAll(".precision-badge").length, 0);
     const el = document.getElementById("summary");
     if (!el) return;
-    el.innerHTML = `<strong>${total}</strong> book${total === 1 ? "" : "s"} — `
-                 + `${counts["read"]} read, `
-                 + `${counts["currently-reading"]} reading, `
-                 + `${counts["to-read"]} want to read`;
+    el.textContent = `${visible.length} book${visible.length === 1 ? "" : "s"} · `
+                   + `${toCheck} date${toCheck === 1 ? "" : "s"} to check`;
 }
 
 

@@ -1,5 +1,6 @@
+{% from "_icons.html" import icon %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,54 +8,56 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    {# Persistent Help link, top-right of every page. Absolute-positioned
-       so it doesn't disturb the centred header layout. #}
-    <a href="{{ url_for('guide') }}" class="help-link">Help &amp; guide</a>
-
-    <header class="site-header">
-        <h1 class="site-title">
-            {# Open-book glyph — feather-icons "book-open". Inline SVG so the
-               icon inherits the title colour and stays crisp at any size. #}
-            <svg class="header-icon" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="1.5"
-                 stroke-linecap="round" stroke-linejoin="round"
-                 aria-hidden="true">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-            </svg>
-            ShelfBridge
-        </h1>
-        <p class="tagline">Fable → Goodreads</p>
+    <header class="top-nav">
+        <div class="top-nav-inner">
+            <a href="{{ url_for('index') }}" class="logo" aria-label="ShelfBridge home">ShelfBridge<span class="logo-dot" aria-hidden="true"></span></a>
+            <nav aria-label="Main">
+                <a href="{{ url_for('guide') }}" class="nav-link">
+                    {{ icon("circle-help") }}
+                    <span class="nav-label">Help and guide</span>
+                </a>
+            </nav>
+        </div>
     </header>
 
-    {# Three-step progress indicator. Each page sets `step` to 1, 2, or 3.
-       The block lets meta pages (e.g. the Help guide) suppress it entirely
-       by overriding with `{% block steps %}{% endblock %}`. #}
-    {% block steps %}
-    <nav class="steps" aria-label="Progress">
-        <ol>
-            <li class="{% if step == 1 %}current{% elif step > 1 %}done{% endif %}">
-                <span class="step-num">1</span>
-                <span class="step-label">Connect</span>
-            </li>
-            <li class="{% if step == 2 %}current{% elif step > 2 %}done{% endif %}">
-                <span class="step-num">2</span>
-                <span class="step-label">Review</span>
-            </li>
-            <li class="{% if step == 3 %}current{% endif %}">
-                <span class="step-num">3</span>
-                <span class="step-label">Export</span>
-            </li>
-        </ol>
-    </nav>
-    {% endblock %}
-
     <main class="container">
+        {# Three-step progress indicator. Each page sets `step` to 1, 2, or 3.
+           The block lets meta pages (e.g. the Help guide) suppress it entirely
+           by overriding with `{% block steps %}{% endblock %}`. #}
+        {% block steps %}
+        <nav class="steps" aria-label="Progress">
+            <ol>
+                {% for label in ["Connect", "Review", "Export"] %}
+                {% set n = loop.index %}
+                <li class="{% if step == n %}current{% elif step > n %}done{% endif %}"
+                    {%- if step == n %} aria-current="step"{% endif %}>
+                    <span class="step-num">{{ n }}</span>
+                    {{ icon("check", "icon-16 step-check") }}
+                    <span class="step-label">{{ label }}</span>
+                    <span class="visually-hidden step-done-text">(done)</span>
+                </li>
+                {% if not loop.last %}
+                <li class="step-connector" aria-hidden="true"></li>
+                {% endif %}
+                {% endfor %}
+            </ol>
+        </nav>
+        {% endblock %}
+
         {% block content %}{% endblock %}
     </main>
 
     <footer class="site-footer">
-        <p>Runs entirely on your computer. Your Fable login is never stored.</p>
+        <div class="site-footer-inner">
+            <p>Runs on your computer. Your Fable login is never stored.</p>
+            <p>
+                {# Only the guide route passes `version`; app.py is out of
+                   scope for the redesign, so other pages omit it. #}
+                {% if version %}v{{ version }} · {% endif %}
+                <a href="https://github.com/itchysudo/shelfbridge/blob/main/LICENSE" target="_blank" rel="noopener">MIT licence</a> ·
+                <a href="https://github.com/itchysudo/shelfbridge" target="_blank" rel="noopener">Source on GitHub</a>
+            </p>
+        </div>
     </footer>
 
     <script src="{{ url_for('static', filename='app.js') }}"></script>

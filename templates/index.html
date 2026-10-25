@@ -1,112 +1,189 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% set step = 1 %}
-{% block title %}Connect to Fable — ShelfBridge{% endblock %}
+{% block title %}Connect to Fable: ShelfBridge{% endblock %}
 
 {% block content %}
-{# The card cycles through several states — JS reveals one at a time
+{# The section cycles through several states. JS reveals one at a time
    based on the response from /scrape/status. #}
-<section class="card" id="connect-card">
+<section id="connect-card">
 
     {# ----- State: intro (first page load) ----- #}
-    <div class="connect-state" data-state="intro">
-        <h2>Welcome</h2>
-        <p class="lead">
-            This tool helps you move your book library out of Fable and into
-            Goodreads. The whole process takes about five minutes.
-        </p>
+    <div class="connect-state page page-welcome" data-state="intro">
+        <div class="tiles">
+            <div class="tile tile-cobalt">
+                <div class="tile-intro">
+                    <p class="label">Fable to Goodreads</p>
+                    <h1 class="hero">Your library, moved in a few clicks.</h1>
+                    <p class="lead">
+                        ShelfBridge reads your Fable shelves and turns them
+                        into a file Goodreads can import. It takes about five
+                        minutes.
+                    </p>
+                </div>
+                <div class="actions">
+                    <button type="button" id="connect-btn" class="btn btn-lg btn-on-tile">
+                        Connect to Fable
+                        {{ icon("arrow-right") }}
+                    </button>
+                    <a href="{{ url_for('library') }}" class="btn btn-lg btn-on-tile-outline">View demo library</a>
+                </div>
+            </div>
 
-        <h3>What happens next</h3>
-        <ol class="explainer">
-            <li>We'll open a fresh browser window so you can log in to Fable.</li>
-            <li>Once you're logged in, we'll read your library and bring it back here.</li>
-            <li>You can review and tidy up the list, then download a file to upload to Goodreads.</li>
-        </ol>
+            <div class="tile tile-amber">
+                <p class="tile-figure">Free</p>
+                <p>Open source, MIT licence. No sign-up.</p>
+            </div>
 
-        <div class="actions">
-            <button id="connect-btn" class="btn btn-primary">Connect to Fable</button>
-            <a href="{{ url_for('library') }}" class="btn btn-link">Skip to demo library →</a>
+            <div class="tile tile-soft">
+                {{ icon("lock", "icon-24") }}
+                <div class="tile-body">
+                    <h2 class="h4">Your password stays with Fable</h2>
+                    <p class="small">You sign in on Fable's own page. We never see it.</p>
+                </div>
+            </div>
+
+            <div class="tile tile-soft tile-wide">
+                {{ icon("pencil", "icon-24") }}
+                <div class="tile-body">
+                    <h2 class="h4">Check it before you export</h2>
+                    <p class="small">
+                        Fix titles, dates and ratings, or remove books you
+                        don't want to move. Changes save as you go.
+                    </p>
+                </div>
+            </div>
         </div>
 
-        <p class="reassure">
-            Your Fable password is never shared with this tool — you'll type
-            it into the Fable website directly, just like normal.
-        </p>
+        <section class="section" aria-labelledby="next-heading">
+            <h2 id="next-heading">What happens next</h2>
+            <ol class="next-steps">
+                <li>
+                    <span class="badge badge-info">Step 1</span>
+                    <h3 class="h4">Connect to Fable</h3>
+                    <p class="text-muted">We open a separate browser window for Fable. Sign in there as you normally would.</p>
+                </li>
+                <li>
+                    <span class="badge badge-info">Step 2</span>
+                    <h3 class="h4">Review your books</h3>
+                    <p class="text-muted">We read your shelves and list every book here. Fix anything that looks wrong.</p>
+                </li>
+                <li>
+                    <span class="badge badge-info">Step 3</span>
+                    <h3 class="h4">Download and import</h3>
+                    <p class="text-muted">Download one file and upload it to Goodreads. Your shelves, ratings and finish dates come across.</p>
+                </li>
+            </ol>
+        </section>
 
-        {# Dev-only entry point for Phase 3a — captures Fable's real HTML so
-           we can write correct selectors in Phase 3b. #}
-        <p class="dev-note">
-            <a href="#" id="discovery-btn">Developer: run discovery mode →</a>
-            <span class="dev-hint">Opens Fable and saves HTML to <code>_discovery/</code>.</span>
-        </p>
+        <div class="alert alert-info" role="note">
+            {{ icon("info") }}
+            <div class="alert-body">
+                <p class="alert-title">Your books are stored on this computer only</p>
+                <p class="alert-detail">Nothing is sent to us. The only outside service ShelfBridge talks to is Fable's API, to read your shelves.</p>
+            </div>
+        </div>
+
+        {# Dev-only entry point: captures Fable's real HTML so we can write
+           correct selectors. #}
+        <div class="dev-note caption">
+            <a href="#" id="discovery-btn">Developer: run discovery mode</a>
+            <span>Opens Fable and saves its HTML to <code>_discovery/</code>.</span>
+        </div>
     </div>
 
     {# ----- State: browser is opening ----- #}
-    <div class="connect-state" data-state="browser_opening" hidden>
-        <h2>Opening browser…</h2>
-        <p class="lead" id="opening-message">Launching a fresh Chromium window.</p>
-        <div class="spinner" aria-hidden="true"></div>
+    <div class="connect-state card card-narrow" data-state="browser_opening" hidden>
+        <div class="page-header">
+            <h1>Opening a browser window</h1>
+            <p class="lead" id="opening-message">We're opening a separate Chromium window for Fable.</p>
+        </div>
+        {{ icon("loader-circle", "spinner") }}
     </div>
 
     {# ----- State: waiting for the user to log in ----- #}
-    <div class="connect-state" data-state="awaiting_login" hidden>
-        <h2>Log in to Fable</h2>
-        <p class="lead" id="login-message">
-            A browser window has opened — please log in to Fable there.
-            Once you're signed in, click the button below.
-        </p>
-        <div class="actions">
-            <button id="loggedin-btn" class="btn btn-primary">I'm logged in</button>
+    <div class="connect-state card card-narrow" data-state="awaiting_login" hidden>
+        <div class="page-header">
+            <h1>Sign in to Fable</h1>
+            <p class="lead" id="login-message">
+                We've opened a Fable window. Sign in there, then come back and
+                select Connect again.
+            </p>
         </div>
-        <p class="reassure">
-            We don't see or store your password. Login happens directly with
-            Fable in the window we opened for you.
-        </p>
+        <div class="actions">
+            <button type="button" id="loggedin-btn" class="btn btn-primary">Connect again</button>
+        </div>
+        <div class="alert alert-info" role="note">
+            {{ icon("info") }}
+            <div class="alert-body">
+                <p class="alert-title">We never see your password</p>
+                <p class="alert-detail">You sign in directly with Fable, in the window we opened for you.</p>
+            </div>
+        </div>
     </div>
 
     {# ----- State: auto-discovery failed, ask user to paste shelf URLs ----- #}
-    <div class="connect-state" data-state="needs_list_urls" hidden>
-        <h2>Help us find your shelves</h2>
-        <p class="lead" id="needs-urls-message">
-            We couldn't find your shelves automatically.
-        </p>
+    <div class="connect-state card card-narrow" data-state="needs_list_urls" hidden>
+        <div class="page-header">
+            <h1>Help us find your shelves</h1>
+            <p class="lead" id="needs-urls-message">
+                We couldn't find your shelves automatically.
+            </p>
+        </div>
         <p>
-            In Fable (in the same browser window we opened), navigate to each
-            of your shelves — typically <em>Finished</em>, <em>Currently Reading</em>,
-            and <em>Want to Read</em>. For each one, copy the URL from the
-            address bar and paste it below, one per line.
+            In the Fable window we opened, go to each of your shelves:
+            usually <em>Finished</em>, <em>Currently reading</em> and
+            <em>Want to read</em>. Copy each one's link from the address bar
+            and paste it below.
         </p>
-        <textarea id="list-urls" class="urls-input" rows="4"
-                  placeholder="https://fable.co/book-list/abc123…
-https://fable.co/book-list/def456…
-https://fable.co/book-list/ghi789…"></textarea>
+        <div class="field">
+            <label for="list-urls">Shelf links, one per line</label>
+            <textarea id="list-urls" class="urls-input" rows="4"
+                      placeholder="https://fable.co/book-list/abc123
+https://fable.co/book-list/def456
+https://fable.co/book-list/ghi789"></textarea>
+        </div>
         <div class="actions">
-            <button id="submit-urls-btn" class="btn btn-primary">Continue</button>
+            <button type="button" id="submit-urls-btn" class="btn btn-primary">Continue</button>
         </div>
     </div>
 
     {# ----- State: scraping / discovering ----- #}
-    <div class="connect-state" data-state="working" hidden>
-        <h2 id="working-heading">Reading your library…</h2>
-        <p class="lead" id="working-message">This usually takes a minute or two.</p>
+    <div class="connect-state card card-narrow" data-state="working" hidden>
+        <div class="page-header">
+            <h1 id="working-heading">Reading your library</h1>
+            <p class="lead" id="working-message">This usually takes 10 to 60 seconds. Keep this tab open.</p>
+        </div>
         <div class="progress-bar"><div class="progress-bar-fill"></div></div>
-        <p class="muted" id="working-detail"></p>
+        {# TODO: the mockup shows a per-shelf status list here ("Finished:
+           Done", "Currently reading: Reading", "Want to read: Waiting"). It
+           needs per-shelf progress events from the scraper, so it's out of
+           scope for the redesign. #}
+        <p class="connecting-detail" id="working-detail" aria-live="polite"></p>
     </div>
 
     {# ----- State: all done ----- #}
-    <div class="connect-state" data-state="complete" hidden>
-        <h2>All done</h2>
-        <p class="lead" id="complete-message">Your library is ready to review.</p>
+    <div class="connect-state card card-narrow" data-state="complete" hidden>
+        <div class="page-header">
+            <h1>Your library is ready</h1>
+            <p class="lead" id="complete-message">Check your books before you export them.</p>
+        </div>
         <div class="actions">
-            <a href="{{ url_for('library') }}" class="btn btn-primary">Review your library →</a>
+            <a href="{{ url_for('library') }}" class="btn btn-primary">
+                Review your library
+                {{ icon("arrow-right") }}
+            </a>
         </div>
     </div>
 
     {# ----- State: error ----- #}
-    <div class="connect-state" data-state="error" hidden>
-        <h2>Something went wrong</h2>
-        <p class="lead" id="error-message">Please try again.</p>
+    <div class="connect-state card card-narrow" data-state="error" hidden>
+        <div class="page-header">
+            <h1>We couldn't read your library</h1>
+            <p class="lead" id="error-message">Check you're signed in to Fable, then try again.</p>
+        </div>
         <div class="actions">
-            <button id="retry-btn" class="btn btn-primary">Try again</button>
+            <button type="button" id="retry-btn" class="btn btn-primary">Try again</button>
         </div>
     </div>
 </section>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,373 +7,556 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Persistent Help link, top-right of every page. -->
-    <a href="#" class="help-link" id="help-link">Help &amp; guide</a>
-
-    <header class="site-header">
-        <h1 class="site-title">
-            <svg class="header-icon" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="1.5"
-                 stroke-linecap="round" stroke-linejoin="round"
-                 aria-hidden="true">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-            </svg>
-            ShelfBridge
-        </h1>
-        <p class="tagline">Get your library out of Fable</p>
+    <header class="top-nav">
+        <div class="top-nav-inner">
+            <span class="logo">ShelfBridge<span class="logo-dot" aria-hidden="true"></span></span>
+            <nav aria-label="Main">
+                <a href="#" class="nav-link" id="help-link">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                    <span class="nav-label">Help and guide</span>
+                </a>
+            </nav>
+        </div>
     </header>
 
-    <!-- Step indicator. JS hides it on the guide view. -->
-    <nav class="steps" id="step-nav" aria-label="Progress">
-        <ol>
-            <li id="step-1"><span class="step-num">1</span><span class="step-label">Connect</span></li>
-            <li id="step-2"><span class="step-num">2</span><span class="step-label">Review</span></li>
-            <li id="step-3"><span class="step-num">3</span><span class="step-label">Export</span></li>
-        </ol>
-    </nav>
-
     <main class="container">
+
+        <!-- Step indicator. JS hides it on the guide and error views, and sets
+             .current / .done / aria-current on the step <li>s. -->
+        <nav class="steps" id="step-nav" aria-label="Progress">
+            <ol>
+                <li id="step-1">
+                    <span class="step-num">1</span>
+                    <svg class="icon icon-16 step-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                    <span class="step-label">Connect</span>
+                    <span class="visually-hidden step-done-text">(done)</span>
+                </li>
+                <li class="step-connector" aria-hidden="true"></li>
+                <li id="step-2">
+                    <span class="step-num">2</span>
+                    <svg class="icon icon-16 step-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                    <span class="step-label">Review</span>
+                    <span class="visually-hidden step-done-text">(done)</span>
+                </li>
+                <li class="step-connector" aria-hidden="true"></li>
+                <li id="step-3">
+                    <span class="step-num">3</span>
+                    <svg class="icon icon-16 step-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                    <span class="step-label">Export</span>
+                    <span class="visually-hidden step-done-text">(done)</span>
+                </li>
+            </ol>
+        </nav>
 
         <!-- ============================================================== -->
         <!-- View: INTRO (the welcome page)                                  -->
         <!-- ============================================================== -->
-        <section class="view card" data-view="intro" hidden>
-            <h2>Welcome</h2>
-            <p class="lead">
-                ShelfBridge gets your reading library out of Fable, so you can
-                take it wherever you like. The whole thing takes about five
-                minutes.
-            </p>
+        <section class="view page page-welcome" data-view="intro" hidden>
+            <div class="tiles">
+                <div class="tile tile-cobalt">
+                    <div class="tile-intro">
+                        <p class="label">Get your library out of Fable</p>
+                        <h1 class="hero">Your library, moved in a few clicks.</h1>
+                        <p class="lead">
+                            ShelfBridge reads your Fable shelves and turns them
+                            into a file Goodreads, StoryGraph or Pagebound can
+                            import. It takes about five minutes.
+                        </p>
+                    </div>
+                    <div class="actions">
+                        <button type="button" id="connect-btn" class="btn btn-lg btn-on-tile">
+                            Connect to Fable
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        </button>
+                        <a href="#" id="skip-to-library" class="btn btn-lg btn-on-tile-outline">View saved library</a>
+                    </div>
+                </div>
 
-            <h3>What happens next</h3>
-            <ol class="explainer">
-                <li>We'll open a Fable tab so you can log in (or use one you already have open).</li>
-                <li>We'll read your library and bring it back here for review.</li>
-                <li>You'll pick where it's going, download a file, and upload it there.</li>
-            </ol>
+                <div class="tile tile-amber">
+                    <p class="tile-figure">Free</p>
+                    <p>Open source, MIT licence. No sign-up.</p>
+                </div>
 
-            <p class="reassure">
-                You can send it to <strong>Goodreads</strong>,
-                <strong>StoryGraph</strong> or <strong>Pagebound</strong>. Pick
-                at the end, and you can come back and download for another one
-                whenever you want.
-            </p>
+                <div class="tile tile-soft">
+                    <svg class="icon icon-24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <div class="tile-body">
+                        <h2 class="h4">Your password stays with Fable</h2>
+                        <p class="small">You sign in on Fable's own page. We never see it.</p>
+                    </div>
+                </div>
 
-            <div class="actions">
-                <button id="connect-btn" class="btn btn-primary">Connect to Fable</button>
-                <a href="#" id="skip-to-library" class="btn btn-link">View saved library →</a>
+                <div class="tile tile-soft tile-wide">
+                    <svg class="icon icon-24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                    <div class="tile-body">
+                        <h2 class="h4">Check it before you export</h2>
+                        <p class="small">
+                            Fix titles, dates and ratings, or remove books you
+                            don't want to move. Changes save as you go.
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <p class="reassure">
-                Your Fable password is never seen or stored by this extension —
-                you sign in on Fable's own page, in your normal browser.
-            </p>
+            <section class="section" aria-labelledby="next-heading">
+                <h2 id="next-heading">What happens next</h2>
+                <ol class="next-steps">
+                    <li>
+                        <span class="badge badge-info">Step 1</span>
+                        <h3 class="h4">Connect to Fable</h3>
+                        <p class="text-muted">We open a Fable tab, or use one you already have. Sign in there as you normally would.</p>
+                    </li>
+                    <li>
+                        <span class="badge badge-info">Step 2</span>
+                        <h3 class="h4">Review your books</h3>
+                        <p class="text-muted">We read your shelves and list every book here. Fix anything that looks wrong.</p>
+                    </li>
+                    <li>
+                        <span class="badge badge-info">Step 3</span>
+                        <h3 class="h4">Pick where it's going</h3>
+                        <p class="text-muted">Choose Goodreads, StoryGraph or Pagebound, then download one file and upload it there. You can come back for another one any time.</p>
+                    </li>
+                </ol>
+            </section>
+
+            <div class="alert alert-info" role="note">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <div class="alert-body">
+                    <p class="alert-title">Your books are stored in this browser only</p>
+                    <p class="alert-detail">Nothing is sent to us. The only outside service ShelfBridge talks to is Fable's API, to read your shelves.</p>
+                </div>
+            </div>
         </section>
 
         <!-- ============================================================== -->
         <!-- View: CONNECTING (in-progress while we scrape)                  -->
         <!-- ============================================================== -->
-        <section class="view card" data-view="connecting" hidden>
-            <h2 id="connecting-heading">Reading your library…</h2>
-            <p class="lead" id="connecting-message">This usually takes a few seconds.</p>
-            <div class="progress-bar"><div class="progress-bar-fill"></div></div>
-            <p class="muted" id="connecting-detail"></p>
+        <section class="view page" data-view="connecting" hidden>
+            <div class="card card-narrow">
+                <div class="page-header">
+                    <h1 id="connecting-heading">Reading your library</h1>
+                    <p class="lead" id="connecting-message">This usually takes 10 to 60 seconds. Keep this tab open.</p>
+                </div>
+                <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+                <!-- TODO: the mockup shows a per-shelf status list here
+                     ("Finished: Done", "Currently reading: Reading",
+                     "Want to read: Waiting"). It needs per-shelf progress
+                     events from scraper.js, so it's out of scope for the
+                     redesign. -->
+                <p class="connecting-detail" id="connecting-detail" aria-live="polite"></p>
+            </div>
         </section>
 
         <!-- ============================================================== -->
         <!-- View: LOGIN NEEDED (user isn't signed in to Fable)              -->
         <!-- ============================================================== -->
-        <section class="view card" data-view="login_needed" hidden>
-            <h2>Sign in to Fable</h2>
-            <p class="lead" id="login-message">
-                We opened a Fable tab — please sign in there, then come back
-                and click Connect again.
-            </p>
-            <div class="actions">
-                <button id="connect-retry-btn" class="btn btn-primary">I'm signed in — Connect again</button>
+        <section class="view page" data-view="login_needed" hidden>
+            <div class="card card-narrow">
+                <div class="page-header">
+                    <h1>Sign in to Fable</h1>
+                    <p class="lead" id="login-message">
+                        We've opened a Fable tab. Sign in there, then come back
+                        and select Connect again.
+                    </p>
+                </div>
+                <div class="actions">
+                    <button type="button" id="connect-retry-btn" class="btn btn-primary">Connect again</button>
+                </div>
             </div>
         </section>
 
         <!-- ============================================================== -->
         <!-- View: LIBRARY (editable table of scraped books)                 -->
         <!-- ============================================================== -->
-        <section class="view card" data-view="library" hidden>
-            <h2>Your library</h2>
-            <p class="lead">
-                Tidy up the list below before exporting. Click any cell to
-                edit — your changes save automatically.
-            </p>
-            <p class="note">
-                <strong>About the Started column:</strong> your Fable start dates
-                are shown here so you've got them, but none of the places you can
-                export to will take one. None of the file formats they accept has
-                a column for it, so the start date is left blank wherever you send
-                your library. Finish dates come across fine.
-            </p>
-
-            <div class="filter-bar" role="tablist" aria-label="Filter by shelf">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="read">Read</button>
-                <button class="filter-btn" data-filter="currently-reading">Reading</button>
-                <button class="filter-btn" data-filter="to-read">Want to read</button>
+        <section class="view page" data-view="library" hidden>
+            <div class="page-header">
+                <h1>Review your library</h1>
+                <p class="lead">
+                    Check titles, dates and ratings before you export. Select
+                    any cell to edit it. Changes save as you go.
+                </p>
             </div>
 
-            <p class="summary" id="summary">…</p>
-
-            <div id="library-empty" class="empty" hidden>
-                You don't have any books saved yet. Click <em>Connect to Fable</em>
-                on the welcome screen to import them.
+            <div class="alert alert-info" role="note">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <div class="alert-body">
+                    <p class="alert-title">Start dates are left blank when you export</p>
+                    <p class="alert-detail">We show your Fable start dates here so you've got them, but none of the files Goodreads, StoryGraph or Pagebound import has a column for one. Finish dates come across fine.</p>
+                </div>
             </div>
 
-            <table class="book-table editable" id="book-table">
-                <thead>
-                    <tr>
-                        <th class="cover-cell" aria-label="Cover"></th>
-                        <th>Title</th>
-                        <th>Author</th>
-                        <th>Shelf</th>
-                        <th>Started</th>
-                        <th>Finished</th>
-                        <th>Rating</th>
-                        <th>ISBN</th>
-                        <th aria-label="Actions"></th>
-                    </tr>
-                </thead>
-                <tbody id="book-tbody"></tbody>
-            </table>
+            <div class="section">
+                <div class="toolbar">
+                    <div class="filter-bar" role="group" aria-label="Filter by shelf">
+                        <button type="button" class="filter-btn active" data-filter="all" aria-pressed="true">
+                            <svg class="icon icon-16 filter-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                            All <span class="filter-count"></span>
+                        </button>
+                        <button type="button" class="filter-btn" data-filter="read" aria-pressed="false">
+                            <svg class="icon icon-16 filter-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                            Read <span class="filter-count"></span>
+                        </button>
+                        <button type="button" class="filter-btn" data-filter="currently-reading" aria-pressed="false">
+                            <svg class="icon icon-16 filter-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                            Reading <span class="filter-count"></span>
+                        </button>
+                        <button type="button" class="filter-btn" data-filter="to-read" aria-pressed="false">
+                            <svg class="icon icon-16 filter-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                            Want to read <span class="filter-count"></span>
+                        </button>
+                    </div>
+                    <p class="summary" id="summary" aria-live="polite"></p>
+                </div>
 
-            <div class="actions">
-                <button id="goto-export-btn" class="btn btn-primary">Continue to export →</button>
-                <a href="#" id="back-to-intro" class="btn btn-link">← Start over</a>
+                <div class="table-wrap">
+                    <div id="library-empty" class="empty-state" hidden>
+                        <span class="empty-icon">
+                            <svg class="icon icon-24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+                        </span>
+                        <h2 class="h4">No books yet</h2>
+                        <p class="small text-muted">Connect to Fable to bring your library in.</p>
+                        <button type="button" id="empty-connect-btn" class="btn btn-primary">Connect to Fable</button>
+                    </div>
+
+                    <table class="book-table editable" id="book-table">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="cover-cell"><span class="visually-hidden">Cover</span></th>
+                                <th scope="col">Title</th>
+                                <th scope="col">Author</th>
+                                <th scope="col">Shelf</th>
+                                <th scope="col">Started</th>
+                                <th scope="col">Finished</th>
+                                <th scope="col">Rating</th>
+                                <th scope="col">ISBN</th>
+                                <th scope="col"><span class="visually-hidden">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="book-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="actions actions-split">
+                <a href="#" id="back-to-intro" class="btn btn-link">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                    Start over
+                </a>
+                <button type="button" id="goto-export-btn" class="btn btn-primary">
+                    Continue to export
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                </button>
             </div>
         </section>
 
         <!-- ============================================================== -->
         <!-- View: EXPORT (pick a destination, download, import steps)       -->
         <!-- ============================================================== -->
-        <section class="view card" data-view="export" hidden>
-            <h2>Download &amp; import</h2>
-            <p class="lead">
-                Almost done. Pick where your library is heading, then download
-                the file.
-            </p>
+        <section class="view page" data-view="export" hidden>
+            <div class="page-header">
+                <h1>Download and import</h1>
+                <p class="lead">Almost done. Pick where your library is going, then download the file.</p>
+            </div>
 
             <!-- Options are built from the target registry in targets.js, so
                  adding a new destination needs no change here. -->
             <fieldset class="target-picker">
-                <legend>Where are you importing to?</legend>
-                <div id="target-options"></div>
+                <legend class="h4">Where are you importing to?</legend>
+                <div id="target-options" class="target-options"></div>
             </fieldset>
 
-            <!-- What arrives and what doesn't, for the chosen destination.
-                 Sits directly under the picker because it's what makes the
-                 choice between them obvious. -->
-            <div id="target-summary" class="target-summary"></div>
+            <div class="export-layout">
+                <div class="export-main">
+                    <!-- Books this destination can't be given, and why. Only
+                         appears when there are some. Named rather than
+                         silently dropped: a missing book you know about is a
+                         nuisance, one you don't is a bug report. Sits above
+                         the download button on purpose. -->
+                    <div id="held-back" class="alert alert-warning" role="note" hidden>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                        <div class="alert-body">
+                            <p class="alert-title" id="held-back-heading"></p>
+                            <ul id="held-back-list" class="held-back-list" tabindex="0" aria-labelledby="held-back-heading"></ul>
+                            <p class="alert-detail">
+                                You can fix most of these. Go
+                                <a href="#" id="held-back-link">back to your library</a>,
+                                add the ISBN yourself, and come back here.
+                                Otherwise, add them by hand at the other end.
+                            </p>
+                        </div>
+                    </div>
 
-            <!-- Only shown for destinations whose file is named after a
-                 different service, which is otherwise alarming. -->
-            <p id="file-note" class="file-note" hidden></p>
+                    <!-- Only shown for destinations whose file is named after
+                         a different service, which is otherwise alarming. -->
+                    <div id="file-note" class="alert alert-info" role="note" hidden>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        <div class="alert-body">
+                            <p class="alert-title">Why the file has that name</p>
+                            <p class="alert-detail" id="file-note-text"></p>
+                        </div>
+                    </div>
 
-            <!-- Books this destination can't be given, and why. Only
-                 appears when there are some. Named rather than silently
-                 dropped: a missing book you know about is a nuisance, one
-                 you don't is a bug report. -->
-            <div id="held-back" class="held-back" hidden>
-                <h4 id="held-back-heading"></h4>
-                <ul id="held-back-list"></ul>
-                <p class="held-back-fix">
-                    You can fix most of these: go
-                    <a href="#" id="held-back-link">back to your library</a>,
-                    put the ISBN in yourself, and come back here.
-                    Otherwise add them by hand at the other end.
-                </p>
+                    <section class="card file-card" aria-labelledby="export-filename">
+                        <div class="file-info">
+                            <span class="square-icon">
+                                <svg class="icon icon-24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M8 13h2"/><path d="M14 13h2"/><path d="M8 17h2"/><path d="M14 17h2"/></svg>
+                            </span>
+                            <div>
+                                <h2 class="file-name" id="export-filename">goodreads_import.csv</h2>
+                                <p class="small text-muted">
+                                    <span id="export-count">0</span> <span id="export-count-noun">books</span>,
+                                    ready for <span id="export-target-name">Goodreads</span>
+                                </p>
+                            </div>
+                        </div>
+                        <button type="button" id="download-btn" class="btn btn-primary btn-lg">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                            <span id="download-label">Download file</span>
+                        </button>
+                    </section>
+
+                    <!-- Shown only once a file has been downloaded, and only
+                         if a Ko-fi link is configured. -->
+                    <div id="kofi-export" class="card kofi-box" hidden>
+                        <p>
+                            Got what you came for? ShelfBridge is free and
+                            always will be. If it saved you some time, you can
+                            chip in towards the coffee that built it.
+                        </p>
+                        <a id="kofi-export-link" class="btn btn-kofi" href="#" target="_blank" rel="noopener">
+                            Support me on Ko-fi
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3"/></svg>
+                        </a>
+                    </div>
+
+                    <section class="section" aria-labelledby="import-heading">
+                        <h2 id="import-heading">Import into Goodreads</h2>
+                        <ol class="import-steps" id="import-steps"></ol>
+                    </section>
+
+                    <section class="section" aria-labelledby="notes-heading">
+                        <h3 class="h4" id="notes-heading">Worth knowing</h3>
+                        <ul class="notes-list" id="import-notes"></ul>
+                    </section>
+                </div>
+
+                <section class="export-side section" aria-labelledby="carry-heading">
+                    <h2 class="h4" id="carry-heading">What comes across</h2>
+                    <div id="target-summary" class="carry-lists"></div>
+                </section>
             </div>
+
+            <section class="section" aria-labelledby="preview-heading">
+                <div class="section-head">
+                    <h2 id="preview-heading">Preview</h2>
+                    <span class="small text-muted" id="export-preview-count"></span>
+                </div>
+                <div class="table-wrap">
+                    <table class="book-table compact" id="export-preview">
+                        <thead>
+                            <tr>
+                                <th scope="col">Title</th>
+                                <th scope="col">Author</th>
+                                <th scope="col">Shelf</th>
+                                <th scope="col">Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody id="export-preview-tbody"></tbody>
+                    </table>
+                </div>
+            </section>
 
             <div class="actions">
-                <button id="download-btn" class="btn btn-primary">Download file</button>
-                <a href="#" id="back-to-library" class="btn btn-link">← Back to library</a>
-            </div>
-
-            <!-- Shown only once a file has been downloaded, and only if a
-                 Ko-fi link is configured. -->
-            <div id="kofi-export" class="kofi-box" hidden>
-                <p class="kofi-text">
-                    Got what you came for? ShelfBridge is free and always will
-                    be. If it saved you some time, you can chip in towards the
-                    coffee that built it.
-                </p>
-                <a id="kofi-export-link" class="btn btn-kofi" href="#" target="_blank" rel="noopener">
-                    Support me
+                <a href="#" id="back-to-library" class="btn btn-link">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                    Back to library
                 </a>
             </div>
-
-            <h3 id="import-heading">How to import</h3>
-            <ol class="explainer" id="import-steps"></ol>
-
-            <p class="note"><strong>Worth knowing:</strong></p>
-            <ul class="explainer" id="import-notes"></ul>
-
-            <h3>Preview (<span id="export-count">0</span> books)</h3>
-            <table class="book-table compact" id="export-preview">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Author</th>
-                        <th>Shelf</th>
-                        <th>Rating</th>
-                    </tr>
-                </thead>
-                <tbody id="export-preview-tbody"></tbody>
-            </table>
         </section>
 
         <!-- ============================================================== -->
         <!-- View: GUIDE (help + about + version)                            -->
         <!-- ============================================================== -->
-        <section class="view" data-view="guide" hidden>
-            <div class="card">
-                <h2>How to use ShelfBridge</h2>
+        <section class="view page" data-view="guide" hidden>
+            <div class="page-header">
+                <h1>How to use ShelfBridge</h1>
                 <p class="lead">
-                    A complete walkthrough of getting your library out of Fable.
-                    Each section below corresponds to one of the three steps in
-                    the wizard.
-                </p>
-
-                <h3>Step 1 — Connect to Fable</h3>
-                <p>
-                    Click <strong>"Connect to Fable"</strong> on the welcome
-                    screen. If you have a Fable tab open already, we'll use
-                    that one — otherwise we'll open one for you. If you're not
-                    signed in to Fable yet, sign in there, then come back to
-                    this tab and click Connect again.
-                </p>
-                <p class="note">
-                    <strong>Privacy:</strong> ShelfBridge never sees your Fable
-                    password. You sign in on Fable's own page, in your normal
-                    browser session.
-                </p>
-
-                <h3>Step 2 — Review your library</h3>
-                <p>
-                    Anything you click in the table becomes editable. Changes
-                    save automatically — there's no "save" button. You can:
-                </p>
-                <ul class="explainer">
-                    <li><strong>Edit any cell</strong> — title, author, shelf, dates, rating, or ISBN.</li>
-                    <li><strong>Star ratings</strong>, including half stars: click the left half of a star for the half, the right half for the whole. Click the same spot again to clear it.</li>
-                    <li><strong>Filter by shelf</strong> — pill buttons above the table.</li>
-                    <li><strong>Delete a row</strong> — small × at the end of each row.</li>
-                </ul>
-
-                <h4>What the "month only" badge means</h4>
-                <p>
-                    Fable only knew the month or year for some dates, not the
-                    exact day. We've defaulted the missing parts to "01" — you
-                    may want to correct the date manually. The badge disappears
-                    once you do.
-                </p>
-
-                <h3>Step 3 — Pick where it's going</h3>
-                <p>
-                    Click <strong>Continue to export</strong> and choose a
-                    destination. Each one tells you what comes across and what
-                    doesn't, and gives you the steps for importing into that
-                    particular app.
-                </p>
-                <ul class="explainer">
-                    <li><strong>Goodreads.</strong> The original route, and the one most people have used.</li>
-                    <li><strong>StoryGraph.</strong> Upload the file using StoryGraph's <em>Goodreads</em> import, because StoryGraph doesn't import its own files.</li>
-                    <li><strong>Pagebound.</strong> Upload the file using Pagebound's <em>StoryGraph</em> option. This is the only one that keeps half stars.</li>
-                </ul>
-                <p class="note">
-                    <strong>Why the file has the wrong name:</strong> files are
-                    named after the format, not the app. So choosing StoryGraph
-                    gets you a file with "goodreads" in the name, and choosing
-                    Pagebound gets you one with "storygraph" in it. That's
-                    correct, and the export page explains it as you go. Upload
-                    them exactly as they are.
-                </p>
-
-                <h3>Things to know about dates and ratings</h3>
-                <ul class="explainer">
-                    <li><strong>Finish dates come across everywhere.</strong></li>
-                    <li><strong>Start dates don't come across at all.</strong> None of these apps can import one, because none of the file formats they accept has a column for it. You'd have to add them by hand afterwards.</li>
-                    <li><strong>Half stars only survive on Pagebound.</strong> Goodreads can't store them, and StoryGraph rounds them on the way in even though it can.</li>
-                    <li><strong>Reviews don't transfer</strong> anywhere.</li>
-                </ul>
-
-                <h4>Can I send my library to more than one place?</h4>
-                <p>
-                    Yes. Your library stays here after you download, so you can
-                    go back to the export page, pick a different destination and
-                    download again. Nothing is used up.
-                </p>
-
-                <h3>Privacy</h3>
-                <p>
-                    Everything runs in your own browser. Your book data is
-                    stored locally via Chrome's extension storage — never sent
-                    to any server we run. The only external service is Fable's
-                    own API (<code>api.fable.co</code>), to read your shelves.
+                    A full walkthrough of getting your library out of Fable.
+                    Each section matches one of the three steps.
                 </p>
             </div>
 
-            <div class="card" id="about">
-                <h2>About</h2>
-                <p class="version-line">
-                    <strong>ShelfBridge</strong> &nbsp; v<span id="version">…</span>
-                </p>
-                <p>
-                    Created by
-                    <a href="https://github.com/itchysudo" target="_blank" rel="noopener">itchysudo</a>.
-                    Released under the
-                    <a href="https://github.com/itchysudo/shelfbridge/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>.
-                </p>
-                <p>
-                    Source code:
-                    <a href="https://github.com/itchysudo/shelfbridge" target="_blank" rel="noopener">github.com/itchysudo/shelfbridge</a>
-                </p>
+            <div class="card">
+                <div class="prose">
+                    <h2>Step 1: Connect to Fable</h2>
+                    <p>
+                        Select <strong>Connect to Fable</strong> on the welcome
+                        screen. If you already have a Fable tab open, we use
+                        that one. If not, we open one for you. If you're not
+                        signed in to Fable yet, sign in there, then come back
+                        to this tab and select <strong>Connect again</strong>.
+                    </p>
+                    <div class="alert alert-info" role="note">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        <div class="alert-body">
+                            <p class="alert-title">ShelfBridge never sees your Fable password</p>
+                            <p class="alert-detail">You sign in on Fable's own page, in your normal browser.</p>
+                        </div>
+                    </div>
 
-                <h3>Need help or want to report a bug?</h3>
-                <p>
-                    Please
-                    <a href="https://github.com/itchysudo/shelfbridge/issues" target="_blank" rel="noopener">open an issue on GitHub</a>.
-                    Searching past issues first is often the quickest way to
-                    find an answer.
-                </p>
+                    <h2>Step 2: Review your library</h2>
+                    <p>
+                        Select anything in the table to edit it. Changes save
+                        as you go, so there's no save button. You can:
+                    </p>
+                    <ul>
+                        <li><strong>Edit any cell:</strong> title, author, shelf, dates, rating or ISBN.</li>
+                        <li><strong>Rate a book, half stars included:</strong> select the left half of a star for the half, or the right half for the whole star. Select the same spot again to clear it.</li>
+                        <li><strong>Filter by shelf:</strong> use the buttons above the table.</li>
+                        <li><strong>Remove a book:</strong> select <strong>Remove</strong> at the end of its row.</li>
+                    </ul>
 
-                <!-- Unhidden by app.js only when a Ko-fi link is configured. -->
-                <p id="kofi-about" hidden>
-                    ShelfBridge is free and unfunded. If you'd like to support
-                    it, you can
-                    <a id="kofi-about-link" href="#" target="_blank" rel="noopener">buy me a coffee on Ko-fi</a>.
-                </p>
+                    <h3>What the "Month only" badge means</h3>
+                    <p>
+                        Fable only had the month or year for some dates, not
+                        the exact day. We've set the missing parts to the 1st,
+                        so you may want to correct the date yourself. The badge
+                        disappears once you do.
+                    </p>
 
-                <div class="actions">
-                    <a href="#" id="back-from-guide" class="btn btn-link">← Back</a>
+                    <h3>Why some ISBN cells are highlighted</h3>
+                    <p>
+                        A highlighted ISBN cell means the book has no ISBN we
+                        can use. Pagebound finds a book by its ISBN and nothing
+                        else, so those books are left out of a Pagebound file.
+                        Type the ISBN in and the highlight clears.
+                    </p>
+
+                    <h2>Step 3: Pick where it's going</h2>
+                    <p>
+                        Select <strong>Continue to export</strong> and choose
+                        a destination. Each one shows what comes across and
+                        what doesn't, and gives you the steps for importing
+                        into that app.
+                    </p>
+                    <ul>
+                        <li><strong>Goodreads:</strong> the original route, and the one most people have used.</li>
+                        <li><strong>StoryGraph:</strong> upload the file using StoryGraph's <strong>Goodreads</strong> import, because StoryGraph doesn't import its own files.</li>
+                        <li><strong>Pagebound:</strong> upload the file using Pagebound's <strong>StoryGraph</strong> option. It's the only one that keeps half stars.</li>
+                    </ul>
+                    <div class="alert alert-info" role="note">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        <div class="alert-body">
+                            <p class="alert-title">Why the file has the "wrong" name</p>
+                            <p class="alert-detail">
+                                Files are named after their format, not the app.
+                                Choosing StoryGraph gets you a file with
+                                "goodreads" in the name, and choosing Pagebound
+                                gets you one with "storygraph" in it. That's
+                                correct. Upload them exactly as they are.
+                            </p>
+                        </div>
+                    </div>
+
+                    <h3>Dates and ratings</h3>
+                    <ul>
+                        <li><strong>Finish dates come across everywhere.</strong></li>
+                        <li><strong>Start dates are left blank everywhere.</strong> None of the files these apps import has a column for one, so you'd add them by hand afterwards.</li>
+                        <li><strong>Half stars only survive on Pagebound.</strong> Goodreads can't store them, and StoryGraph rounds them on the way in.</li>
+                        <li><strong>Reviews don't come across</strong> anywhere.</li>
+                    </ul>
+
+                    <h3>Can I send my library to more than one place?</h3>
+                    <p>
+                        Yes. Your library stays here after you download, so
+                        you can go back to the export page, pick a different
+                        destination and download again. Nothing is used up.
+                    </p>
+
+                    <h2>Privacy</h2>
+                    <p>
+                        Everything runs in your own browser. Your books are
+                        stored in this browser's extension storage and never
+                        sent to a server we run. The only outside service is
+                        Fable's own API (<code>api.fable.co</code>), to read
+                        your shelves.
+                    </p>
                 </div>
+            </div>
+
+            <div class="card" id="about">
+                <div class="prose">
+                    <h2>About</h2>
+                    <p class="version-line">
+                        <span class="logo">ShelfBridge<span class="logo-dot" aria-hidden="true"></span></span>
+                        <span class="mono text-muted">v<span id="version"></span></span>
+                    </p>
+                    <p>
+                        Created by
+                        <a href="https://github.com/itchysudo" target="_blank" rel="noopener">itchysudo</a>.
+                        Released under the
+                        <a href="https://github.com/itchysudo/shelfbridge/blob/main/LICENSE" target="_blank" rel="noopener">MIT licence</a>.
+                    </p>
+                    <p>
+                        Source code:
+                        <a href="https://github.com/itchysudo/shelfbridge" target="_blank" rel="noopener">github.com/itchysudo/shelfbridge</a>
+                    </p>
+
+                    <h3>Need help or found a bug?</h3>
+                    <p>
+                        <a href="https://github.com/itchysudo/shelfbridge/issues" target="_blank" rel="noopener">Open an issue on GitHub</a>.
+                        Search past issues first: someone may already have
+                        the answer.
+                    </p>
+
+                    <!-- Unhidden by app.js only when a Ko-fi link is configured. -->
+                    <p id="kofi-about" hidden>
+                        ShelfBridge is free and unfunded. If you'd like to
+                        support it, you can
+                        <a id="kofi-about-link" href="#" target="_blank" rel="noopener">buy me a coffee on Ko-fi</a>.
+                    </p>
+                </div>
+            </div>
+
+            <div class="actions">
+                <a href="#" id="back-from-guide" class="btn btn-link">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                    Back
+                </a>
             </div>
         </section>
 
         <!-- ============================================================== -->
         <!-- View: ERROR (generic failure display)                           -->
         <!-- ============================================================== -->
-        <section class="view card" data-view="error" hidden>
-            <h2>Something went wrong</h2>
-            <p class="lead" id="error-message">Please try again.</p>
-            <div class="actions">
-                <button id="retry-btn" class="btn btn-primary">Try again</button>
+        <section class="view page" data-view="error" hidden>
+            <div class="card card-narrow">
+                <div class="page-header">
+                    <h1>We couldn't read your library</h1>
+                    <p class="lead" id="error-message">Check you're signed in to Fable, then try again.</p>
+                </div>
+                <div class="actions">
+                    <button type="button" id="retry-btn" class="btn btn-primary">Try again</button>
+                </div>
             </div>
         </section>
 
     </main>
 
     <footer class="site-footer">
-        <p>Runs entirely in your browser. Your Fable login is never stored.</p>
+        <div class="site-footer-inner">
+            <p>Runs in your browser. Your Fable login is never stored.</p>
+            <p>
+                v<span id="footer-version"></span> ·
+                <a href="https://github.com/itchysudo/shelfbridge/blob/main/LICENSE" target="_blank" rel="noopener">MIT licence</a> ·
+                <a href="https://github.com/itchysudo/shelfbridge" target="_blank" rel="noopener">Source on GitHub</a>
+            </p>
+        </div>
     </footer>
 
-    <div id="saved-indicator" class="saved-indicator" aria-live="polite">Saved ✓</div>
+    <div id="saved-indicator" class="saved-indicator" role="status" aria-live="polite">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        Saved.
+    </div>
 
     <script type="module" src="app.js"></script>
 </body>

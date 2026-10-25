@@ -37,7 +37,7 @@ const KOFI_URL = "https://ko-fi.com/itchysudodev";
 // View routing.
 // ---------------------------------------------------------------------------
 
-// Which step in the Connect → Review → Export wizard a given view sits at.
+// Which step in the Connect, Review, Export wizard a given view sits at.
 // Used to highlight the step indicator; null means hide the indicator.
 const VIEW_TO_STEP = {
     intro:        1,
@@ -78,8 +78,13 @@ function renderStepIndicator(step) {
     for (let i = 1; i <= 3; i++) {
         const li = document.getElementById("step-" + i);
         li.classList.remove("current", "done");
-        if (i === step)       li.classList.add("current");
-        else if (i < step)    li.classList.add("done");
+        li.removeAttribute("aria-current");
+        if (i === step) {
+            li.classList.add("current");
+            li.setAttribute("aria-current", "step");
+        } else if (i < step) {
+            li.classList.add("done");
+        }
     }
 }
 
@@ -90,18 +95,18 @@ function renderStepIndicator(step) {
 
 async function startConnect() {
     showView("connecting");
-    setConnectingMessage("Reading your library…", "Looking for an open Fable tab…");
+    setConnectingMessage("Reading your library", "Looking for an open Fable tab…");
 
     try {
         const books = await runScrape((progress) => {
             const headings = {
-                opening:  "Opening Fable…",
-                checking: "Checking your Fable login…",
-                scraping: "Reading your library…",
-                done:     "Done.",
+                opening:  "Opening Fable",
+                checking: "Checking you're signed in",
+                scraping: "Reading your library",
+                done:     "Done",
             };
             setConnectingMessage(
-                headings[progress.status] || "Working…",
+                headings[progress.status] || "Reading your library",
                 progress.message || "",
             );
         });
@@ -112,16 +117,18 @@ async function startConnect() {
             document.getElementById("login-message").textContent = err.message;
             showView("login_needed");
         } else {
-            const msg = (err && err.message) || "Something went wrong while reading your Fable library.";
+            const msg = (err && err.message) || "Check you're signed in to Fable, then try again.";
             document.getElementById("error-message").textContent = msg;
             showView("error");
         }
     }
 }
 
+// The lead paragraph (#connecting-message) keeps its "how long this takes"
+// copy; the scraper's running commentary goes in the smaller detail line.
 function setConnectingMessage(heading, detail) {
     document.getElementById("connecting-heading").textContent = heading;
-    document.getElementById("connecting-message").textContent = detail;
+    document.getElementById("connecting-detail").textContent = detail;
 }
 
 
@@ -138,6 +145,8 @@ async function renderLibrary() {
     if (books.length === 0) {
         table.hidden = true;
         empty.hidden = false;
+        tbody.innerHTML = "";
+        updateSummary();
         document.getElementById("summary").textContent = "No books yet.";
         return;
     }
@@ -156,38 +165,41 @@ function renderBookRow(book) {
 
     const stars = starsMarkup(book.rating);
 
-    const shelfOpts = [
-        ["read",              "Read"],
-        ["currently-reading", "Reading"],
-        ["to-read",           "Want to read"],
-    ].map(([v, label]) =>
+    const shelfOpts = Object.entries(SHELF_LABELS).map(([v, label]) =>
         `<option value="${v}"${book.shelf === v ? " selected" : ""}>${label}</option>`,
     ).join("");
+
+    const title = book.title || "";
 
     return `
         <tr data-book-id="${escapeAttr(book.id)}" data-shelf="${escapeAttr(book.shelf || "")}">
             <td class="cover-cell">${cover}</td>
-            <td><input type="text" class="cell-input" data-field="title" value="${escapeAttr(book.title || "")}"></td>
-            <td><input type="text" class="cell-input" data-field="author" value="${escapeAttr(book.author || "")}"></td>
-            <td><select class="cell-input" data-field="shelf">${shelfOpts}</select></td>
+            <td class="cell-title"><input type="text" class="cell-input" data-field="title" aria-label="Title" value="${escapeAttr(title)}"></td>
+            <td class="cell-author"><input type="text" class="cell-input" data-field="author" aria-label="Author" value="${escapeAttr(book.author || "")}"></td>
+            <td><select class="cell-input" data-field="shelf" aria-label="Shelf">${shelfOpts}</select></td>
             <td>
-                <input type="date" class="cell-input" data-field="date_started" value="${escapeAttr(book.date_started || "")}">
-                ${precisionBadge(book.date_started_type)}
+                <div class="date-cell">
+                    <input type="date" class="cell-input" data-field="date_started" aria-label="Date started" value="${escapeAttr(book.date_started || "")}">
+                    ${precisionBadge(book.date_started_type)}
+                </div>
             </td>
             <td>
-                <input type="date" class="cell-input" data-field="date_finished" value="${escapeAttr(book.date_finished || "")}">
-                ${precisionBadge(book.date_finished_type)}
+                <div class="date-cell">
+                    <input type="date" class="cell-input" data-field="date_finished" aria-label="Date finished" value="${escapeAttr(book.date_finished || "")}">
+                    ${precisionBadge(book.date_finished_type)}
+                </div>
             </td>
             <td>
-                <div class="stars" data-field="rating" data-value="${book.rating || 0}">${stars}</div>
+                <div class="stars" role="group" data-field="rating" data-value="${book.rating || 0}" aria-label="${ratingLabel(book.rating)}">${stars}</div>
             </td>
-            <td><input type="text"
+            <td class="cell-isbn"><input type="text"
                        class="cell-input isbn-input${hasUsableIsbn(book.isbn) ? "" : " is-missing"}"
                        data-field="isbn"
+                       aria-label="ISBN"
                        value="${escapeAttr(book.isbn || "")}"
                        title="${hasUsableIsbn(book.isbn) ? "" : escapeAttr(NO_ISBN_HINT)}"
-                       placeholder="no ISBN"></td>
-            <td><button type="button" class="delete-btn" aria-label="Delete this book">×</button></td>
+                       placeholder="Add ISBN"></td>
+            <td class="actions-cell"><button type="button" class="delete-btn" aria-label="Remove ${escapeAttr(title)}">${icon(ICON_PATHS.trash)}Remove</button></td>
         </tr>
     `;
 }
@@ -219,18 +231,19 @@ function starsMarkup(rating) {
         const state = starState(n, rating);
         return `<button type="button" class="star ${state}" data-value="${n}" ` +
                `aria-label="Rate ${n} star${n === 1 ? "" : "s"}" ` +
-               `title="Left half for ${n - 0.5}, right half for ${n}">★</button>`;
+               `title="Left half for ${n - 0.5}, right half for ${n}">${STAR_GLYPH}</button>`;
     }).join("");
 }
 
 // Turn a click inside a star button into a rating. Left half gives the half
-// value; anything else gives the whole. Keyboard activation reports an offset of
-// 0 with no width, which falls through to the whole value — half stars need the
-// mouse, which is an acceptable limit for a nicety like this.
+// value; anything else gives the whole. A keyboard press (Enter or Space)
+// arrives as a click with event.detail of 0 and no real pointer position, so
+// it always gives the whole value: half stars need the mouse, which is an
+// acceptable limit for a nicety like this.
 function ratingFromClick(star, event) {
     const whole = Number(star.dataset.value);
     const box = star.getBoundingClientRect();
-    if (!box.width) return whole;
+    if (!box.width || event.detail === 0) return whole;
     const clickedLeftHalf = (event.clientX - box.left) < box.width / 2;
     return clickedLeftHalf ? whole - 0.5 : whole;
 }
@@ -238,6 +251,7 @@ function ratingFromClick(star, event) {
 // Repaint a row's stars after a change, without re-rendering the whole table.
 function paintStars(starsEl, rating) {
     starsEl.dataset.value = rating || 0;
+    starsEl.setAttribute("aria-label", ratingLabel(rating));
     starsEl.querySelectorAll(".star").forEach((star) => {
         const state = starState(Number(star.dataset.value), rating);
         star.classList.remove("is-full", "is-half", "is-empty");
@@ -246,19 +260,57 @@ function paintStars(starsEl, rating) {
 }
 
 
+function ratingLabel(rating) {
+    return rating ? `Rating: ${rating} of 5` : "Not rated";
+}
+
 function precisionBadge(type) {
-    if (type === "month") {
-        return `<span class="precision-badge" title="Fable only had the month — day defaulted to 01">month only</span>`;
-    }
-    if (type === "year") {
-        return `<span class="precision-badge" title="Fable only had the year — month and day defaulted to 01">year only</span>`;
-    }
-    return "";
+    const badges = {
+        month: ["Month only", "Fable only had the month, so the day is set to the 1st"],
+        year:  ["Year only",  "Fable only had the year, so the date is set to 1 January"],
+    };
+    if (!badges[type]) return "";
+    const [text, tooltip] = badges[type];
+    return `<span class="precision-badge" title="${tooltip}">${icon(ICON_PATHS.alertTriangle)}${text}</span>`;
 }
 
 function placeholderSVG() {
-    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4h14a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V4z"/><path d="M4 4v14a2 2 0 0 0 2 2h14"/></svg>`;
+    return icon(ICON_PATHS.book);
 }
+
+// Lucide icons, drawn inline so they pick up the text colour.
+const ICON_PATHS = {
+    book:          '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
+    trash:         '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+    alertTriangle: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+    check:         '<path d="M20 6 9 17l-5-5"/>',
+    circleX:       '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+    externalLink:  '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3"/>',
+};
+
+function icon(paths) {
+    return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+}
+
+// One star shape. Fill and stroke come from CSS, so the same markup serves
+// every state.
+const STAR_POINTS = "12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2";
+const STAR_SVG = `<svg viewBox="0 0 24 24" stroke-width="1.75" stroke-linejoin="round" aria-hidden="true"><polygon points="${STAR_POINTS}"/></svg>`;
+
+// A star button's contents: an empty outline with a filled copy on top. The
+// button's is-full / is-half / is-empty class decides how much of the filled
+// copy shows (see .star-fill in style.css).
+const STAR_GLYPH =
+    `<span class="star-glyph" aria-hidden="true">` +
+    `<svg class="star-outline" viewBox="0 0 24 24" stroke-width="1.75" stroke-linejoin="round"><polygon points="${STAR_POINTS}"/></svg>` +
+    `<svg class="star-fill" viewBox="0 0 24 24" stroke-width="1.75" stroke-linejoin="round"><polygon points="${STAR_POINTS}"/></svg>` +
+    `</span>`;
+
+const SHELF_LABELS = {
+    "read":              "Read",
+    "currently-reading": "Reading",
+    "to-read":           "Want to read",
+};
 
 function escapeHTML(s) {
     return String(s).replace(/[&<>"']/g, (c) => ({
@@ -306,7 +358,10 @@ function wireLibraryEvents() {
         if (field === "date_finished" || field === "date_started") {
             const cell = input.closest("td");
             const badge = cell && cell.querySelector(".precision-badge");
-            if (badge) badge.remove();
+            if (badge) {
+                badge.remove();
+                updateSummary();
+            }
         }
         showSaved();
     });
@@ -335,7 +390,7 @@ function wireLibraryEvents() {
         if (!btn) return;
         const row = btn.closest("tr");
         const title = row.querySelector('[data-field="title"]').value;
-        if (!confirm(`Remove "${title}" from your library?`)) return;
+        if (!confirm(`Remove "${title}"? You can't undo this.`)) return;
         const ok = await deleteBook(row.dataset.bookId);
         if (ok) {
             row.remove();
@@ -349,8 +404,12 @@ function wireFilterEvents() {
     document.querySelector(".filter-bar").addEventListener("click", (event) => {
         const btn = event.target.closest(".filter-btn");
         if (!btn) return;
-        document.querySelectorAll(".filter-btn").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".filter-btn").forEach((b) => {
+            b.classList.remove("active");
+            b.setAttribute("aria-pressed", "false");
+        });
         btn.classList.add("active");
+        btn.setAttribute("aria-pressed", "true");
         applyActiveFilter();
     });
 }
@@ -365,19 +424,25 @@ function applyActiveFilter() {
 }
 
 function updateSummary() {
-    const rows = Array.from(document.querySelectorAll("#book-tbody tr"))
-                      .filter((r) => !r.hidden);
-    const total = rows.length;
-    const counts = { "read": 0, "currently-reading": 0, "to-read": 0 };
+    const rows = Array.from(document.querySelectorAll("#book-tbody tr"));
+
+    // Shelf totals for the filter pills, whichever filter is active.
+    const counts = { "all": rows.length, "read": 0, "currently-reading": 0, "to-read": 0 };
     rows.forEach((r) => {
         if (counts[r.dataset.shelf] !== undefined) counts[r.dataset.shelf]++;
     });
+    document.querySelectorAll(".filter-btn").forEach((btn) => {
+        const el = btn.querySelector(".filter-count");
+        if (el) el.textContent = counts[btn.dataset.filter] ?? 0;
+    });
+
+    const visible = rows.filter((r) => !r.hidden);
+    const toCheck = visible.reduce(
+        (n, r) => n + r.querySelectorAll(".precision-badge").length, 0);
     const el = document.getElementById("summary");
     if (!el) return;
-    el.innerHTML = `<strong>${total}</strong> book${total === 1 ? "" : "s"} — `
-        + `${counts["read"]} read, `
-        + `${counts["currently-reading"]} reading, `
-        + `${counts["to-read"]} want to read`;
+    el.textContent = `${visible.length} book${visible.length === 1 ? "" : "s"} · `
+        + `${toCheck} date${toCheck === 1 ? "" : "s"} to check`;
 }
 
 
@@ -409,17 +474,23 @@ async function refreshExportPreview() {
 
     // Say "426 of 478" when some are held back, so the number on the page
     // matches the number of rows in the file without hiding the difference.
-    document.getElementById("export-count").textContent = excluded.length
+    const countText = excluded.length
         ? `${included.length} of ${books.length}`
         : String(included.length);
+    const noun = (excluded.length ? books.length : included.length) === 1 ? "book" : "books";
+    document.getElementById("export-count").textContent = countText;
+    document.getElementById("export-count-noun").textContent = noun;
+    document.getElementById("export-preview-count").textContent = `${countText} ${noun}`;
 
     const tbody = document.getElementById("export-preview-tbody");
     tbody.innerHTML = included.map((b) => `
         <tr>
-            <td>${escapeHTML(b.title || "")}</td>
-            <td>${escapeHTML(b.author || "—")}</td>
-            <td>${escapeHTML(b.shelf || "")}</td>
-            <td>${b.rating || ""}</td>
+            <td class="title-text">${escapeHTML(b.title || "")}</td>
+            <td>${b.author ? escapeHTML(b.author) : '<span class="text-subtle">Unknown</span>'}</td>
+            <td class="text-muted">${escapeHTML(SHELF_LABELS[b.shelf] || b.shelf || "")}</td>
+            <td>${b.rating
+                ? `<span class="rating-inline">${STAR_SVG}${b.rating} of 5</span>`
+                : '<span class="text-subtle">Not rated</span>'}</td>
         </tr>
     `).join("");
 
@@ -434,7 +505,7 @@ function renderTargetPicker() {
             <input type="radio" name="target" value="${escapeHTML(t.id)}"
                    ${t.id === selectedTargetId ? "checked" : ""}>
             <span class="target-label">${escapeHTML(t.label)}${
-                t.beta ? ' <span class="beta-badge">beta</span>' : ""
+                t.beta ? ' <span class="badge badge-neutral">Beta</span>' : ""
             }</span>
             <span class="target-blurb">${escapeHTML(t.blurb)}</span>
         </label>
@@ -457,43 +528,51 @@ function renderTargetPicker() {
 function renderTargetDetails() {
     const target = getTarget(selectedTargetId);
 
-    document.getElementById("download-btn").textContent =
+    // The button keeps its icon, so only its label changes.
+    document.getElementById("download-label").textContent =
         `Download file for ${target.label}`;
     document.getElementById("import-heading").textContent =
-        `How to import into ${target.label}`;
+        `Import into ${target.label}`;
+    document.getElementById("export-filename").textContent = target.filename;
+    document.getElementById("export-target-name").textContent = target.label;
 
-    // Two tick/cross lists, so the difference between destinations can be read
-    // at a glance instead of pieced together from the prose below.
+    // Two lists, so the difference between destinations can be read at a
+    // glance instead of pieced together from the prose below.
     const summary = target.summary || { keeps: [], loses: [] };
-    const list = (items, cls, mark) => items.map((i) =>
-        `<li class="${cls}"><span aria-hidden="true">${mark}</span> ${escapeHTML(i)}</li>`
+    const list = (items, cls, iconPaths) => items.map((i) =>
+        `<li class="${cls}">${icon(iconPaths)}<span>${escapeHTML(i)}</span></li>`
     ).join("");
     document.getElementById("target-summary").innerHTML = `
-        <div class="summary-col">
-            <h4>Comes across</h4>
-            <ul>${list(summary.keeps, "keeps", "✓")}</ul>
+        <div>
+            <h3>Comes across</h3>
+            <ul>${list(summary.keeps, "keeps", ICON_PATHS.check)}</ul>
         </div>
-        <div class="summary-col">
-            <h4>Doesn't</h4>
-            <ul>${list(summary.loses, "loses", "✗")}</ul>
+        <div>
+            <h3>Doesn't</h3>
+            <ul>${list(summary.loses, "loses", ICON_PATHS.circleX)}</ul>
         </div>
     `;
 
     // fileNote is our own copy and contains a <code> tag on purpose.
     const noteEl = document.getElementById("file-note");
     if (target.fileNote) {
-        noteEl.innerHTML = target.fileNote;
+        document.getElementById("file-note-text").innerHTML = target.fileNote;
         noteEl.hidden = false;
     } else {
         noteEl.hidden = true;
     }
 
+    // Steps are our own copy from targets.js. Some contain <strong> on purpose,
+    // so `before` is inserted as HTML, as the notes below are.
     document.getElementById("import-steps").innerHTML =
-        target.instructions.map((step) => {
-            const before = escapeHTML(step.before || "");
-            if (!step.href) return `<li>${before}</li>`;
-            const link = `<a href="${escapeHTML(step.href)}" target="_blank" rel="noopener">${escapeHTML(step.linkText || step.href)}</a>`;
-            return `<li>${before}${link}${escapeHTML(step.after || "")}</li>`;
+        target.instructions.map((step, i) => {
+            const before = step.before || "";
+            const link = step.href
+                ? `<a class="external-link" href="${escapeHTML(step.href)}" target="_blank" rel="noopener">` +
+                  `${escapeHTML(step.linkText || step.href)}${icon(ICON_PATHS.externalLink)}</a>`
+                : "";
+            return `<li><span class="step-square" aria-hidden="true">${i + 1}</span>` +
+                   `<p>${before}${link}${escapeHTML(step.after || "")}</p></li>`;
         }).join("");
 
     document.getElementById("import-notes").innerHTML =
@@ -535,7 +614,7 @@ function renderHeldBack(excluded, target) {
 async function doDownload() {
     const books = await getBooks();
     if (books.length === 0) {
-        alert("There are no books to export yet.");
+        alert("No books to export yet. Connect to Fable first.");
         return;
     }
 
@@ -583,8 +662,11 @@ function showSaved() {
 // Read the version straight from the manifest rather than hardcoding it in the
 // About panel, where it had gone stale across two releases.
 function showVersion() {
-    const el = document.getElementById("version");
-    if (el) el.textContent = chrome.runtime.getManifest().version;
+    const version = chrome.runtime.getManifest().version;
+    for (const id of ["version", "footer-version"]) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = version;
+    }
 }
 
 
@@ -628,6 +710,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("back-to-intro").addEventListener("click", (e) => {
         e.preventDefault(); showView("intro");
     });
+    // The empty state's "Connect to Fable" does the same as Start over.
+    document.getElementById("empty-connect-btn").addEventListener("click", () => showView("intro"));
     document.getElementById("download-btn").addEventListener("click", doDownload);
 
     document.getElementById("help-link").addEventListener("click", (e) => {

@@ -1,63 +1,145 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon, star %}
 {% set step = 3 %}
-{% block title %}Export — ShelfBridge{% endblock %}
+{% set shelf_labels = {"read": "Read", "currently-reading": "Reading", "to-read": "Want to read"} %}
+{% block title %}Export: ShelfBridge{% endblock %}
 
 {% block content %}
-<section class="card">
-    <h2>Download &amp; import</h2>
-    <p class="lead">
-        Almost done. Download the file below, then upload it to Goodreads
-        using the steps shown.
-    </p>
-
-    <div class="actions">
-        <a href="{{ url_for('export_csv') }}" class="btn btn-primary">Download Goodreads file</a>
-        <a href="{{ url_for('library') }}" class="btn btn-link">← Back to library</a>
+{% set count = books | length %}
+{% set noun = "book" if count == 1 else "books" %}
+<div class="page">
+    <div class="page-header">
+        <h1>Download and import</h1>
+        <p class="lead">Almost done. Download your file, then upload it to Goodreads.</p>
     </div>
 
-    <h3>How to import into Goodreads</h3>
-    <ol class="explainer">
-        <li>Open <a href="https://www.goodreads.com/review/import" target="_blank" rel="noopener">goodreads.com/review/import</a> in a new tab.</li>
-        <li>Click <em>Choose File</em> and pick the file you just downloaded.</li>
-        <li>Click <em>Import books</em> and wait a minute or two.</li>
-    </ol>
+    <div class="export-layout">
+        <div class="export-main">
+            <section class="card file-card" aria-labelledby="file-name">
+                <div class="file-info">
+                    <span class="square-icon">{{ icon("file-spreadsheet", "icon-24") }}</span>
+                    <div>
+                        <h2 class="file-name" id="file-name">goodreads_import.csv</h2>
+                        <p class="small text-muted">{{ count }} {{ noun }}, ready for Goodreads</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('export_csv') }}" class="btn btn-primary btn-lg">
+                    {{ icon("download") }}
+                    Download Goodreads file
+                </a>
+            </section>
 
-    <p class="note">
-        <strong>A couple of things to know about the dates:</strong>
-    </p>
-    <ul class="explainer">
-        <li><strong>Date Read</strong> in Goodreads = your Fable <em>finish</em> date.</li>
-        <li><strong>Date Added</strong> in Goodreads is mapped from your Fable
-            <em>start</em> date — Goodreads doesn't have a "date started"
-            column of its own, and the start date is the best historical
-            signal we have for when a book entered your library.
-            Books you haven't started yet (on your <em>To-Read</em> shelf)
-            will have a blank Date Added, and Goodreads will fill that in
-            with today's date on import.</li>
-        <li>Reviews are <strong>not</strong> accepted by Goodreads' CSV
-            importer — only ratings, shelves, and dates come across.</li>
-    </ul>
+            <section class="section" aria-labelledby="import-heading">
+                <h2 id="import-heading">Import into Goodreads</h2>
+                <ol class="import-steps">
+                    <li>
+                        <span class="step-square" aria-hidden="true">1</span>
+                        <p>
+                            Open
+                            <a class="external-link" href="https://www.goodreads.com/review/import" target="_blank" rel="noopener">goodreads.com/review/import{{ icon("external-link") }}</a>
+                            in a new tab and sign in.
+                        </p>
+                    </li>
+                    <li>
+                        <span class="step-square" aria-hidden="true">2</span>
+                        <p>Select <strong>Choose file</strong> and pick the file you just downloaded.</p>
+                    </li>
+                    <li>
+                        <span class="step-square" aria-hidden="true">3</span>
+                        <p>Select <strong>Import books</strong>. It can take a minute or two.</p>
+                    </li>
+                </ol>
+            </section>
+        </div>
 
-    <h3>Preview ({{ books | length }} books)</h3>
-    <table class="book-table compact">
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Author</th>
-                <th>Shelf</th>
-                <th>Rating</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for book in books %}
-            <tr>
-                <td>{{ book.title }}</td>
-                <td>{{ book.author or "—" }}</td>
-                <td>{{ book.shelf }}</td>
-                <td>{{ book.rating or "" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</section>
+        <section class="export-side section" aria-labelledby="carry-heading">
+            <h2 class="h4" id="carry-heading">What comes across</h2>
+            <div class="table-wrap">
+                <table class="book-table mapping-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">From Fable</th>
+                            <th scope="col">In Goodreads</th>
+                            <th scope="col">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Shelf</td>
+                            <td>Exclusive shelf</td>
+                            <td><span class="badge badge-success">{{ icon("check") }}Imported</span></td>
+                        </tr>
+                        <tr>
+                            <td>Rating</td>
+                            <td>My rating</td>
+                            <td><span class="badge badge-success">{{ icon("check") }}Imported</span></td>
+                        </tr>
+                        <tr>
+                            <td>Finish date</td>
+                            <td>Date read</td>
+                            <td><span class="badge badge-success">{{ icon("check") }}Imported</span></td>
+                        </tr>
+                        <tr>
+                            <td>Start date</td>
+                            <td>Date added</td>
+                            <td><span class="badge badge-warning">{{ icon("alert-triangle") }}Replaced on import</span></td>
+                        </tr>
+                        <tr>
+                            <td>Review</td>
+                            <td class="text-subtle">None</td>
+                            <td><span class="badge badge-danger">{{ icon("circle-x") }}Not imported</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="small text-muted">
+                Goodreads' importer ignores reviews and swaps your start date
+                for the day you import. That's a limit on their side, not ours.
+                Want to read books arrive with no Date added.
+            </p>
+        </section>
+    </div>
+
+    <section class="section" aria-labelledby="preview-heading">
+        <div class="section-head">
+            <h2 id="preview-heading">Preview</h2>
+            <span class="small text-muted">{{ count }} {{ noun }}</span>
+        </div>
+        <div class="table-wrap">
+            <table class="book-table compact">
+                <thead>
+                    <tr>
+                        <th scope="col">Title</th>
+                        <th scope="col">Author</th>
+                        <th scope="col">Shelf</th>
+                        <th scope="col">Rating</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for book in books %}
+                    <tr>
+                        <td class="title-text">{{ book.title }}</td>
+                        <td>{% if book.author %}{{ book.author }}{% else %}<span class="text-subtle">Unknown</span>{% endif %}</td>
+                        <td class="text-muted">{{ shelf_labels.get(book.shelf, book.shelf) }}</td>
+                        <td>
+                            {% if book.rating %}
+                            <span class="rating-inline">{{ star() }}{{ book.rating }} of 5</span>
+                            {% else %}
+                            <span class="text-subtle">Not rated</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="actions">
+        <a href="{{ url_for('library') }}" class="btn btn-link">
+            {{ icon("arrow-left") }}
+            Back to library
+        </a>
+    </div>
+</div>
 {% endblock %}
