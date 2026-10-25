@@ -216,6 +216,8 @@ For hot-reload and the Werkzeug debugger during development of the Flask app:
 FLASK_DEBUG=1 .venv/bin/python app.py
 ```
 
+Versions from 2.0 onwards take the form `2.YYMM.N`: the major version, then the year and month of the release, then a count that starts at 1 each month. So the first release in October 2026 is 2.2610.1, a second one that month would be 2.2610.2, and the first in November is 2.2611.1. Year comes before month because Chrome only accepts an update with a higher version number than the last, and month first would go backwards every January.
+
 To build a fresh ZIP of the extension for a Chrome Web Store update, bump the `version` in `extension/manifest.json` and run:
 
 ```bash
