@@ -108,13 +108,15 @@ Everything in this table was checked by actually importing into a real account, 
 | Half-star ratings | rounded | rounded | **kept** |
 | Start dates | no | no | no |
 | Reviews | no | no | no |
-| Every book | yes | yes | only ones it already has |
+| Every book | yes | yes | only ones it already has, and only with an ISBN |
 
 **Start dates don't come across anywhere.** All three apps can store one, but none of the file formats they'll accept has a column to carry it, so the field is left blank and you'd have to fill it in yourself. Finish dates are fine everywhere.
 
 **Half stars only survive on Pagebound.** Goodreads can't store them at all. StoryGraph can, but its Goodreads importer rounds them on the way in, so a 3.5 lands as a 4.
 
 **Pagebound may not take everything.** It only brings across books that already exist in its own library, so anything it hasn't got a record of gets skipped. Pagebound says this on its upload page, and it also calls that import route beta. Worth checking your count after an import.
+
+**Books with no ISBN are left out of the Pagebound file.** Pagebound finds a book by its ISBN and nothing else, so a book Fable has no ISBN for would go across as a row Pagebound has to guess at, and a wrong guess drops a book you've never read into your library. Rather than risk that, those books stay behind. The export page lists exactly which ones, and you can type the ISBN in yourself on the library page and export again. Audiobooks are the usual culprits: Fable sometimes holds an Amazon ASIN for them instead of an ISBN, and the two aren't interchangeable.
 
 ### One thing that looks wrong but isn't
 
@@ -169,6 +171,9 @@ Click **More info** then **Run anyway**.
 **The app says it only imports Goodreads or StoryGraph files, and rejects mine**
 Make sure you picked the matching option in that app: StoryGraph's *Goodreads* import for the StoryGraph file, and Pagebound's *StoryGraph* option for the Pagebound one. These apps check the file's header to work out where it came from, so uploading it under the wrong option will bounce it.
 
+**A book I've never read turned up in my Pagebound library**
+This has happened to two people, and both times the book sat on the TBR shelf, unrated. It wasn't in either file, so Pagebound added it at its end. I can't see inside its matcher, so I can't tell you for certain why. What I can tell you is what we were handing it: rows with the ISBN column blank, which is the one column it goes on. From 1.1.1 those rows stay behind and get named on the export page instead, so that route is shut. It may not have been the only route, so if this happens to you on 1.1.1 or later I'd like to hear about it. Delete the book, update, and export again.
+
 **Hardly any of my books imported**
 First check you picked the matching option, as above. If you did, the app couldn't find your books in its own catalogue. Pagebound is explicit that it only transfers books already in its library, so expect some to be skipped there. Unusual editions and books with no ISBN are the most likely to be missed anywhere.
 
@@ -188,6 +193,8 @@ This repo has both variants of the tool:
 |---|---|
 | `extension/` | Chrome extension (MV3). The user-facing shipping path. |
 | `extension/app/targets.js` | Export formats and destinations. This is where you'd add a new one. |
+| `tests/` | Tests for the export layer. No framework, run with `node tests/targets.test.mjs`. |
+| `tools/inspect-csv.mjs` | Triage a CSV somebody sends in: `node tools/inspect-csv.mjs file.csv "book title"`. Reports the format, any shifted columns, rows with no usable ISBN, and values we'd never write. Dev only, doesn't ship. |
 | `app.py`, `scraper.py`, `transformer.py`, `db.py`, `templates/`, `static/` | Local Flask app. Goodreads only, for now. |
 | `setup.sh` / `setup.bat` | One-time installer for the Python side. |
 | `start.command` / `start.bat` | Double-clickable launchers for the Python app. |
@@ -200,6 +207,8 @@ Both variants share the same header-snooping approach against `api.fable.co`. A 
 `targets.js` keeps **formats** and **destinations** separate, because they don't line up the way you'd expect. A destination rarely accepts the format named after it: StoryGraph wants a Goodreads export, and Pagebound wants a StoryGraph one. Adding a destination means adding an entry that points at whichever format that app really takes, and nothing else in the codebase changes.
 
 One hard-won rule if you do: **get a real export out of the target app before writing the transformer.** Published column lists for Goodreads are wrong in both directions, and these apps identify a file by matching its header exactly, so a list that's the right length but the wrong contents gets silently rejected. Every format in `targets.js` was built from a real export and there are tests pinning those headers verbatim.
+
+The other thing to settle is **what the destination matches a book on.** If it's ISBN and nothing else, say so with `matchesOn: "isbn"`, and `partitionBooks` will keep books with no ISBN out of the file. That flag exists because sending Pagebound a row with a blank ISBN put a book nobody had read into two different people's libraries. A destination that also matches on title and author, as Goodreads and StoryGraph do, doesn't need it.
 
 For hot-reload and the Werkzeug debugger during development of the Flask app:
 

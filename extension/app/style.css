@@ -21,6 +21,8 @@
     --shelf-read-bg: #e7f3f1;
     --shelf-reading-bg: #fff4dd;
     --shelf-toread-bg: #ecebf7;
+    --warn-bg: #fdf3e3;          /* tinted panel — something needs attention */
+    --warn-line: #9a6209;        /* border and emphasis on --warn-bg */
 
     /* Friendly serif stack for headings. We use system fonts so the app
        stays offline-capable. "Iowan Old Style" ships with macOS, "Palatino"
@@ -387,7 +389,11 @@ h1, h2, h3 {
 
 .summary-col { flex: 1 1 12rem; }
 
-.summary-col h4 {
+/* Scoped to .card to outrank the generic `.card h4` further down this
+   file, which has equal specificity and would otherwise win on source
+   order and repaint this serif. Both of these headings live inside the
+   export view, which is a .card. */
+.card .summary-col h4 {
     margin: 0 0 0.4rem;
     font-family: var(--font-sans);
     font-size: 0.78rem;
@@ -434,6 +440,65 @@ h1, h2, h3 {
     padding: 0.05rem 0.25rem;
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.7);
+}
+
+/* ---------- Books a destination can't take ---------- */
+/* Amber rather than red: nothing has gone wrong, but the export is about
+   to be smaller than the library and the user needs to know which books
+   and why. */
+
+.held-back {
+    margin: 0.75rem 0 0;
+    padding: 0.85rem 1rem;
+    border-left: 3px solid var(--warn-line);
+    border-radius: 0 8px 8px 0;
+    background: var(--warn-bg);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--ink);
+}
+
+/* Scoped to .card for the same reason as .summary-col h4 above: without
+   it, `.card h4` wins on source order and the warning heading loses both
+   its amber and its sans-serif. */
+.card .held-back h4 {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    color: var(--warn-line);
+}
+
+.held-back ul {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.held-back li { margin-bottom: 0.2rem; }
+
+/* The reason sits under the title rather than after it, so a long list stays
+   scannable by title alone. */
+.held-back-reason {
+    display: block;
+    font-size: 0.88rem;
+    /* Not --muted: on the amber panel that only reaches 4.05:1, which fails
+       AA. This is the same grey pushed darker until it clears 5:1. */
+    color: #5a686e;
+}
+
+.held-back-fix {
+    margin: 0.6rem 0 0;
+    font-size: 0.9rem;
+}
+
+/* An empty ISBN on the library page. Worth pointing at, because it's the
+   one field that decides whether Pagebound can find the book at all. */
+.isbn-input.is-missing {
+    background: var(--warn-bg);
+}
+
+.isbn-input.is-missing::placeholder {
+    color: var(--warn-line);
+    opacity: 1;
 }
 
 /* ---------- Ko-fi support prompt ---------- */

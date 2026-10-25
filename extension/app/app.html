@@ -175,6 +175,21 @@
                  different service, which is otherwise alarming. -->
             <p id="file-note" class="file-note" hidden></p>
 
+            <!-- Books this destination can't be given, and why. Only
+                 appears when there are some. Named rather than silently
+                 dropped: a missing book you know about is a nuisance, one
+                 you don't is a bug report. -->
+            <div id="held-back" class="held-back" hidden>
+                <h4 id="held-back-heading"></h4>
+                <ul id="held-back-list"></ul>
+                <p class="held-back-fix">
+                    You can fix most of these: go
+                    <a href="#" id="held-back-link">back to your library</a>,
+                    put the ISBN in yourself, and come back here.
+                    Otherwise add them by hand at the other end.
+                </p>
+            </div>
+
             <div class="actions">
                 <button id="download-btn" class="btn btn-primary">Download file</button>
                 <a href="#" id="back-to-library" class="btn btn-link">← Back to library</a>

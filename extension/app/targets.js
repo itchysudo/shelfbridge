@@ -152,13 +152,53 @@ function isbn13to10(isbn13) {
     return nine + isbn10CheckDigit(nine);
 }
 
+// Does this value's check digit add up? Both ISBN lengths carry one, and
+// verifying it is what separates a real identifier from a typo or a truncated
+// paste.
+//
+// This matters more than it looks, because length alone is not enough. A
+// 10-digit value that was never an ISBN still satisfies isbn10to13, which
+// prepends 978 and computes a FRESH check digit, so nonsense would leave here
+// as a syntactically perfect ISBN-13 and point the destination at whichever
+// real book owns that number. A blank column gives a destination nothing to
+// match on; a well-formed wrong number gives it confident rubbish. The second
+// is worse, and it is the same class of failure this filter exists to prevent.
+//
+// It bites here specifically because the export page now tells people to type
+// missing ISBNs in by hand, and hand-copying 13 digits is exactly where
+// single-digit slips come from.
+function isbnCheckDigitOk(digits) {
+    if (digits.length === 13) {
+        return ean13CheckDigit(digits.slice(0, 12)) === digits[12];
+    }
+    if (digits.length === 10) {
+        return isbn10CheckDigit(digits.slice(0, 9)) === digits[9];
+    }
+    return false;
+}
+
 // Return {ten, thirteen} for whichever single ISBN Fable gave us, filling in
-// the other form where it exists. Either may be an empty string.
+// the other form where it exists. Either may be an empty string, and both are
+// empty for anything that does not check out.
 function bothIsbnForms(isbn) {
     const digits = isbnDigits(isbn);
+    if (!isbnCheckDigitOk(digits)) return { ten: "", thirteen: "" };
     if (digits.length === 10) return { ten: digits, thirteen: isbn10to13(digits) };
-    if (digits.length === 13) return { ten: isbn13to10(digits), thirteen: digits };
-    return { ten: "", thirteen: "" };
+    return { ten: isbn13to10(digits), thirteen: digits };
+}
+
+// One definition of "this book carries an identifier we can use", exported so
+// the library page can highlight exactly the rows partitionBooks would hold
+// back.
+//
+// It is exported because two definitions drifted apart once already: the
+// library table tested the stored string for truthiness while this tested
+// normalised digits, so a book carrying an Amazon ASIN looked perfectly fine in
+// the table and then quietly vanished from the file. That is the very case the
+// filter was written for.
+export function hasUsableIsbn(isbn) {
+    const { ten, thirteen } = bothIsbnForms(isbn);
+    return Boolean(ten || thirteen);
 }
 
 
@@ -452,12 +492,17 @@ const pagebound = {
     // you sent: their catalogue simply doesn't have the rest.
     filename: "storygraph_library_export.csv",
     blurb: "Keeps the most, including half stars.",
+    // Pagebound identifies a book by its ISBN/UID and by nothing else, so a
+    // row with that column blank gives it nothing to go on. partitionBooks
+    // below holds those rows back rather than sending them.
+    matchesOn: "isbn",
     ...STORYGRAPH_FORMAT,
 
     summary: {
         keeps: ["Your shelves", "Whole-star ratings", "Finish dates",
                 "Half-star ratings"],
         loses: ["Start dates (left blank)",
+                "Books with no ISBN",
                 "Books Pagebound doesn't already have"],
     },
 
@@ -499,8 +544,95 @@ const pagebound = {
         "hasn't got a record of is skipped. Pagebound says so on its own upload " +
         "page, and it also calls this import route beta. Nothing we can do from " +
         "this end, and it's worth checking your count afterwards.",
+        "<strong>Books with no ISBN are left out of this file.</strong> " +
+        "Pagebound finds a book by its ISBN and by nothing else, so a book " +
+        "Fable has no ISBN for would go across as a row it has to guess at, " +
+        "and a wrong guess puts a book in your library you've never read. " +
+        "Anything left out is listed above the download button, and you can " +
+        "fill the ISBN in yourself on the library page.",
     ],
 };
+
+
+// ---------------------------------------------------------------------------
+// Which books a destination can actually take.
+// ---------------------------------------------------------------------------
+// Two people importing into Pagebound ended up with the same book neither had
+// read ("We Still Here", Marc Lamont Hill), on the TBR shelf and unrated. It
+// was in neither file, so Pagebound put it there.
+//
+// The one file we got hold of: 478 rows, 52 of them (11%) with an empty
+// ISBN/UID. Header an exact match, no shifted columns, all 426 present ISBNs
+// pass their check digit, Read Count only ever 0 or 1. Nothing wrong with that
+// file except the blanks.
+//
+// For the blanks being the cause: they are the only defect in an otherwise
+// clean file, ISBN/UID is the only column Pagebound matches on, and two
+// unrelated people got the SAME wrong book, which is the signature of a
+// fallback rather than a coincidence.
+//
+// Against: all 52 blank rows were marked "read" and the phantom arrived on
+// "to-read". For a blank row to be the trigger, Pagebound has to be dumping
+// anything it cannot identify onto to-read regardless of what the file says.
+// Plausible, unverified. That user's to-read shelf was three books, all with
+// valid ISBNs, two in the 979-8 Amazon range a book catalogue is less likely to
+// carry, so a valid-but-unfindable ISBN is a live alternative explanation and
+// this filter would not catch it.
+//
+// So: leading suspect, not proven cause. Worth acting on either way, because
+// what is not in doubt is what we were handing over. A row with no identifier
+// asks the destination to guess, and we were sending 52 of them.
+//
+// A destination that matches on ISBN alone now only receives rows that carry
+// one. Leaving a book out is a visible outcome the export page names and
+// explains, and the user can paste an ISBN in on the library page and export
+// again. Sending an unidentified row is neither visible nor explainable.
+//
+// This bites more often than you would think. Fable has no ISBN for a good
+// number of titles, audiobooks especially, where it sometimes holds an Amazon
+// ASIN instead. An ASIN is not an ISBN and cannot be turned into one.
+
+// A reason to hold this book back from this destination, or "" to send it.
+function skipReason(book, target) {
+    const hasTitle = Boolean(String(book.title || "").trim());
+    const raw = String(book.isbn || "").trim();
+    const digits = isbnDigits(raw);
+    const hasIsbn = hasUsableIsbn(raw);
+
+    // No identifier and nothing to read either: no destination can use this.
+    if (!hasTitle && !hasIsbn) return "it has no title and no ISBN";
+
+    if (target.matchesOn === "isbn" && !hasIsbn) {
+        if (!raw) {
+            return `${target.label} matches on ISBN, and this one hasn't got one`;
+        }
+        // A right-length value whose check digit does not add up is nearly
+        // always a slip of the fingers, and saying so is far more use than
+        // telling somebody the number they just typed "isn't an ISBN".
+        if (digits.length === 10 || digits.length === 13) {
+            return `"${raw}" looks like a typo, its check digit doesn't add up`;
+        }
+        // Otherwise it was never an ISBN at all, an Amazon ASIN most often.
+        // Quote it back either way, so the user can see what we rejected.
+        return `${target.label} matches on ISBN, and "${raw}" isn't one`;
+    }
+    return "";
+}
+
+// Split a library into the rows a destination will be sent and the ones held
+// back, each with the reason why. The export page shows the second list.
+export function partitionBooks(books, targetId) {
+    const target = getTarget(targetId);
+    const included = [];
+    const excluded = [];
+
+    for (const book of books) {
+        const reason = skipReason(book, target);
+        if (reason) excluded.push({ book, reason });
+        else included.push(book);
+    }
+    return { included, excluded };
+}
 
 
 // ---------------------------------------------------------------------------

@@ -5,7 +5,9 @@
 
 import { runScrape } from "./scraper.js";
 import { generateCSV, downloadCSV } from "./transformer.js";
-import { TARGETS, DEFAULT_TARGET_ID, getTarget } from "./targets.js";
+import {
+    TARGETS, DEFAULT_TARGET_ID, getTarget, partitionBooks, hasUsableIsbn,
+} from "./targets.js";
 import {
     getBooks, setBooks, updateBook, deleteBook,
 } from "./storage.js";
@@ -21,6 +23,13 @@ import {
 // Deliberately a plain link rather than Ko-fi's embed widget: the widget loads
 // a remote script (storage.ko-fi.com/.../overlay-widget.js), which Manifest V3
 // forbids and the Web Store would reject. Same destination, no remote code.
+// Shown on any ISBN cell we cannot use. Lives here rather than inline in the
+// row template because the edit handler needs to put it back when somebody
+// clears the field again.
+const NO_ISBN_HINT =
+    "No usable ISBN. Pagebound finds a book by its ISBN and nothing else, so " +
+    "this one will be left out of a Pagebound export.";
+
 const KOFI_URL = "https://ko-fi.com/itchysudodev";
 
 
@@ -172,7 +181,12 @@ function renderBookRow(book) {
             <td>
                 <div class="stars" data-field="rating" data-value="${book.rating || 0}">${stars}</div>
             </td>
-            <td><input type="text" class="cell-input isbn-input" data-field="isbn" value="${escapeAttr(book.isbn || "")}" placeholder="—"></td>
+            <td><input type="text"
+                       class="cell-input isbn-input${hasUsableIsbn(book.isbn) ? "" : " is-missing"}"
+                       data-field="isbn"
+                       value="${escapeAttr(book.isbn || "")}"
+                       title="${hasUsableIsbn(book.isbn) ? "" : escapeAttr(NO_ISBN_HINT)}"
+                       placeholder="no ISBN"></td>
             <td><button type="button" class="delete-btn" aria-label="Delete this book">×</button></td>
         </tr>
     `;
@@ -280,6 +294,15 @@ function wireLibraryEvents() {
             updateSummary();
             applyActiveFilter();
         }
+        // Clear the missing-ISBN highlight as soon as a usable one is typed in,
+        // so the row stops nagging without waiting for a re-render. Note this
+        // uses the same predicate as the export filter, so a value that looks
+        // like an ISBN but fails its check digit keeps the highlight.
+        if (field === "isbn") {
+            const usable = hasUsableIsbn(updated.isbn);
+            input.classList.toggle("is-missing", !usable);
+            input.title = usable ? "" : NO_ISBN_HINT;
+        }
         if (field === "date_finished" || field === "date_started") {
             const cell = input.closest("td");
             const badge = cell && cell.querySelector(".precision-badge");
@@ -367,10 +390,31 @@ function updateSummary() {
 let selectedTargetId = DEFAULT_TARGET_ID;
 
 async function renderExport() {
+    renderTargetPicker();
+    renderTargetDetails();
+    await refreshExportPreview();
+
+    // Hide the Ko-fi prompt again on re-entry so it only ever appears as a
+    // response to an actual download.
+    document.getElementById("kofi-export").hidden = true;
+}
+
+// The count, the preview table and the held-back panel all describe the same
+// one file, so they are all computed from a single partition. Re-run whenever
+// the chosen destination changes, because the rules differ per destination.
+async function refreshExportPreview() {
     const books = await getBooks();
-    document.getElementById("export-count").textContent = books.length;
+    const target = getTarget(selectedTargetId);
+    const { included, excluded } = partitionBooks(books, target.id);
+
+    // Say "426 of 478" when some are held back, so the number on the page
+    // matches the number of rows in the file without hiding the difference.
+    document.getElementById("export-count").textContent = excluded.length
+        ? `${included.length} of ${books.length}`
+        : String(included.length);
+
     const tbody = document.getElementById("export-preview-tbody");
-    tbody.innerHTML = books.map((b) => `
+    tbody.innerHTML = included.map((b) => `
         <tr>
             <td>${escapeHTML(b.title || "")}</td>
             <td>${escapeHTML(b.author || "—")}</td>
@@ -379,12 +423,7 @@ async function renderExport() {
         </tr>
     `).join("");
 
-    renderTargetPicker();
-    renderTargetDetails();
-
-    // Hide the Ko-fi prompt again on re-entry so it only ever appears as a
-    // response to an actual download.
-    document.getElementById("kofi-export").hidden = true;
+    renderHeldBack(excluded, target);
 }
 
 // Build one radio option per registered target.
@@ -405,6 +444,7 @@ function renderTargetPicker() {
         input.addEventListener("change", () => {
             selectedTargetId = input.value;
             renderTargetDetails();
+            refreshExportPreview();
             document.getElementById("kofi-export").hidden = true;
         });
     });
@@ -460,13 +500,59 @@ function renderTargetDetails() {
         target.notes.map((note) => `<li>${note}</li>`).join("");
 }
 
+// Name the books this destination will not be given, and why.
+//
+// Pagebound matches on ISBN alone, so a book with no usable ISBN cannot be
+// sent: an unidentified row is a row the destination has to guess at, and two
+// people have since found a book in their library they had never read. Far
+// better to name the ones we are holding back and let the user fill an ISBN in.
+//
+// Takes the partition rather than recomputing it, so the panel and the file can
+// never disagree about what was left out.
+function renderHeldBack(excluded, target) {
+    const box = document.getElementById("held-back");
+
+    if (excluded.length === 0) {
+        box.hidden = true;
+        return;
+    }
+
+    document.getElementById("held-back-heading").textContent =
+        excluded.length === 1
+            ? `1 book can't go to ${target.label}`
+            : `${excluded.length} books can't go to ${target.label}`;
+
+    document.getElementById("held-back-list").innerHTML = excluded.map(({ book, reason }) => `
+        <li>
+            <strong>${escapeHTML(book.title || "Untitled")}</strong>
+            <span class="held-back-reason">${escapeHTML(reason)}</span>
+        </li>
+    `).join("");
+
+    box.hidden = false;
+}
+
 async function doDownload() {
     const books = await getBooks();
     if (books.length === 0) {
         alert("There are no books to export yet.");
         return;
     }
+
+    // Guard on what would actually land in the file. Every book being held back
+    // is unlikely but possible, and a header-only CSV plus a thank-you is a
+    // worse outcome than being told why nothing can be sent.
     const target = getTarget(selectedTargetId);
+    const { included } = partitionBooks(books, target.id);
+    if (included.length === 0) {
+        alert(
+            `None of your books can be sent to ${target.label}. ` +
+            "See the list above the button for why, then add the missing ISBNs " +
+            "on the library page."
+        );
+        return;
+    }
+
     const csv = generateCSV(books, target.id);
     downloadCSV(csv, target.filename);
 
@@ -534,6 +620,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     document.getElementById("goto-export-btn").addEventListener("click", () => showView("export"));
     document.getElementById("back-to-library").addEventListener("click", (e) => {
+        e.preventDefault(); showView("library");
+    });
+    document.getElementById("held-back-link").addEventListener("click", (e) => {
         e.preventDefault(); showView("library");
     });
     document.getElementById("back-to-intro").addEventListener("click", (e) => {
