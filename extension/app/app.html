@@ -204,7 +204,15 @@
                             Want to read <span class="filter-count"></span>
                         </button>
                     </div>
-                    <p class="summary" id="summary" aria-live="polite"></p>
+                    <div class="toolbar-end">
+                        <!-- Changes the order of the table only, never the
+                             export. Options come from librarySort.js. -->
+                        <div class="sort-control">
+                            <label for="sort-by">Sort by</label>
+                            <select id="sort-by" class="sort-select"></select>
+                        </div>
+                        <p class="summary" id="summary" aria-live="polite"></p>
+                    </div>
                 </div>
 
                 <!-- Date range. Unlike the shelf buttons, this limits the
@@ -463,6 +471,7 @@
                         <li><strong>Edit any cell:</strong> title, author, shelf, dates, rating or ISBN.</li>
                         <li><strong>Rate a book, half stars included:</strong> select the left half of a star for the half, or the right half for the whole star. Select the same spot again to clear it.</li>
                         <li><strong>Filter by shelf:</strong> use the buttons above the table. This only changes what you see; the export still has every shelf.</li>
+                        <li><strong>Sort the list:</strong> use <strong>Sort by</strong> to order it by title, author, finish date, start date or rating, either way round. Books with nothing to sort on, such as no rating, go to the bottom. Sorting only changes what you see, not the file.</li>
                         <li><strong>Export only part of your library:</strong> set a From date, a To date or both. Books outside them are left out of your export, which helps if you moved to Fable from somewhere else and only want what you've logged since. A book is placed by its finish date, or its start date if it isn't finished. Books with no dates at all are left out unless you tick <strong>Include books with no dates</strong>.</li>
                         <li><strong>Remove a book:</strong> select <strong>Remove</strong> at the end of its row.</li>
                     </ul>

@@ -14,6 +14,7 @@ import {
 import {
     matchesDateFilter, applyDateFilter, isDateFilterActive, isDateRangeBackwards,
 } from "./dateFilter.js";
+import { SORT_OPTIONS, DEFAULT_SORT, sortBooks } from "./librarySort.js";
 
 
 // ---------------------------------------------------------------------------
@@ -149,6 +150,10 @@ const libraryBooks = new Map();
 // export, which is worse than having to set it again.
 const dateFilter = { from: "", to: "", includeUndated: false };
 
+// The table's "Sort by" choice. View only: the export keeps the library's own
+// order. Held in memory for the session, like the date range.
+let sortId = DEFAULT_SORT;
+
 async function renderLibrary() {
     const books = await getBooks();
     const tbody = document.getElementById("book-tbody");
@@ -170,7 +175,7 @@ async function renderLibrary() {
     table.hidden = false;
     empty.hidden = true;
 
-    tbody.innerHTML = books.map(renderBookRow).join("");
+    tbody.innerHTML = sortBooks(books, sortId).map(renderBookRow).join("");
     updateSummary();
     applyActiveFilter();
 }
@@ -530,6 +535,35 @@ function wireDateFilterEvents() {
     });
 }
 
+// Fill the "Sort by" dropdown and reorder the table when it changes.
+function wireSortEvents() {
+    const select = document.getElementById("sort-by");
+    select.innerHTML = SORT_OPTIONS.map((o) =>
+        `<option value="${o.id}"${o.id === sortId ? " selected" : ""}>${escapeHTML(o.label)}</option>`,
+    ).join("");
+    select.addEventListener("change", () => {
+        sortId = select.value;
+        reorderRows();
+    });
+}
+
+// Put the existing rows in the chosen order. Moves the rows rather than
+// re-rendering them, so nothing typed or focused is lost. Deliberately not
+// called after an edit: a row jumping away while someone is fixing its title
+// would be worse than a list that's briefly out of order.
+function reorderRows() {
+    const tbody = document.getElementById("book-tbody");
+    const rows = new Map(
+        Array.from(tbody.rows).map((row) => [row.dataset.bookId, row]),
+    );
+    // libraryBooks keeps the library's own order, which is what "Fable order"
+    // needs to get back to.
+    for (const book of sortBooks([...libraryBooks.values()], sortId)) {
+        const row = rows.get(book.id);
+        if (row) tbody.appendChild(row);
+    }
+}
+
 // "1 Jan 2024", for the export page's notice. The date is read as UTC so the
 // local time zone can't move it back a day.
 function formatDay(iso) {
@@ -858,6 +892,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     wireLibraryEvents();
     wireFilterEvents();
     wireDateFilterEvents();
+    wireSortEvents();
     wireKofiLinks();
     showVersion();
 
