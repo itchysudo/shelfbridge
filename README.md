@@ -98,7 +98,7 @@ Whichever option you picked, the wizard is the same three steps:
 
 ## What comes across, and what doesn't
 
-Everything in this table was checked by actually importing into a real account, not read off a help page. The one exception is reviews, which are still being tested.
+Everything in this table was checked by actually importing into a real account, not read off a help page. The one exception is reviews, which have so far only been tested on Goodreads.
 
 | | Goodreads | StoryGraph | Pagebound |
 |---|---|---|---|
@@ -107,7 +107,7 @@ Everything in this table was checked by actually importing into a real account, 
 | Finish dates | yes | yes | yes |
 | Half-star ratings | rounded | rounded | **kept** |
 | Start dates | no | no | no |
-| Written reviews, if you tick the box | being tested | being tested | being tested |
+| Written reviews, if you tick the box | yes | being tested | being tested |
 | Every book | yes | yes | only ones it already has, and only with an ISBN |
 
 **Start dates don't come across anywhere.** All three apps can store one, but none of the file formats they'll accept has a column to carry it, so the field is left blank and you'd have to fill it in yourself. Finish dates are fine everywhere.

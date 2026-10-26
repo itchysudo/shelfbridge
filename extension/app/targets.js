@@ -397,15 +397,17 @@ const goodreads = {
     // at a glance, which the prose notes underneath are not — the point is to
     // make choosing between destinations easy.
     summary: {
-        keeps: ["Your shelves", "Whole-star ratings", "Finish dates"],
+        keeps: ["Your shelves", "Whole-star ratings", "Finish dates",
+                "Written reviews, if you include them"],
         loses: ["Half stars", "Start dates"],
     },
 
     // Shown under "Include my written reviews". reviewsConfirmed stays false
     // until a real import has shown the review arriving; the page says so.
+    // Goodreads confirmed 26-10-2026: My Review arrived on the book's page.
     reviewNote: "Goodreads shows reviews on your profile, where anyone can " +
                 "see them, so only tick this if you're happy for them to appear there.",
-    reviewsConfirmed: false,
+    reviewsConfirmed: true,
 
     // Each step is {before, href, linkText, after}. Only `before` is required;
     // the link and `after` let a step put a link mid-sentence rather than
