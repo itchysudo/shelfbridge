@@ -612,11 +612,14 @@ a.logo:hover { color: var(--text); }
 .tile-cobalt :focus-visible { outline-color: var(--on-tile-cobalt); }
 
 .tile-amber {
-    justify-content: flex-end;
-    gap: var(--space-2);
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-4);
     background: var(--tile-amber);
     color: var(--on-tile-amber);
 }
+.tile-amber .tile-body { gap: var(--space-2); margin-top: auto; }
+.tile-amber .btn-kofi { flex: 0 0 auto; }
 .tile-figure {
     font-family: var(--font-display);
     font-weight: 600;

@@ -919,15 +919,21 @@ function markReleaseSeen() {
 // Ko-fi links.
 // ---------------------------------------------------------------------------
 
-// Point both Ko-fi links at KOFI_URL. With no URL set, the About paragraph
-// stays hidden and the export prompt never unhides, so nothing half-wired
-// reaches a user.
+// Point every Ko-fi link at KOFI_URL: the welcome page's Free tile, the About
+// panel and the prompt after a download. With no URL set, all three stay
+// hidden, so nothing half-wired reaches a user.
 function wireKofiLinks() {
     if (!KOFI_URL) return;
 
     document.getElementById("kofi-export-link").href = KOFI_URL;
     document.getElementById("kofi-about-link").href = KOFI_URL;
     document.getElementById("kofi-about").hidden = false;
+
+    // The welcome page's "Free" tile, where it sits next to "free and
+    // open source" rather than asking before the tool has done anything.
+    const welcome = document.getElementById("kofi-welcome-link");
+    welcome.href = KOFI_URL;
+    welcome.hidden = false;
 }
 
 
