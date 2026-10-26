@@ -11,6 +11,9 @@ import {
 import {
     getBooks, setBooks, updateBook, deleteBook,
 } from "./storage.js";
+import {
+    matchesDateFilter, applyDateFilter, isDateFilterActive, isDateRangeBackwards,
+} from "./dateFilter.js";
 
 
 // ---------------------------------------------------------------------------
@@ -136,15 +139,29 @@ function setConnectingMessage(heading, detail) {
 // Library view — render + interaction.
 // ---------------------------------------------------------------------------
 
+// The books behind the table, by id, kept in step with every edit. The date
+// filter needs each book's dates and their precision, which the rows alone
+// don't carry once a badge has been removed.
+const libraryBooks = new Map();
+
+// The library's date range. Kept in memory only, like the export destination:
+// a filter left over from an earlier visit would quietly shrink the next
+// export, which is worse than having to set it again.
+const dateFilter = { from: "", to: "", includeUndated: false };
+
 async function renderLibrary() {
     const books = await getBooks();
     const tbody = document.getElementById("book-tbody");
     const table = document.getElementById("book-table");
     const empty = document.getElementById("library-empty");
 
+    libraryBooks.clear();
+    books.forEach((book) => libraryBooks.set(book.id, book));
+
     if (books.length === 0) {
         table.hidden = true;
         empty.hidden = false;
+        document.getElementById("library-no-match").hidden = true;
         tbody.innerHTML = "";
         updateSummary();
         document.getElementById("summary").textContent = "No books yet.";
@@ -340,6 +357,7 @@ function wireLibraryEvents() {
 
         const updated = await updateBook(bookId, patch);
         if (!updated) return;
+        libraryBooks.set(bookId, updated);
 
         if (field === "shelf") {
             row.dataset.shelf = updated.shelf;
@@ -358,10 +376,9 @@ function wireLibraryEvents() {
         if (field === "date_finished" || field === "date_started") {
             const cell = input.closest("td");
             const badge = cell && cell.querySelector(".precision-badge");
-            if (badge) {
-                badge.remove();
-                updateSummary();
-            }
+            if (badge) badge.remove();
+            // A new date can move the book in or out of the date range.
+            applyActiveFilter();
         }
         showSaved();
     });
@@ -380,6 +397,7 @@ function wireLibraryEvents() {
 
         const updated = await updateBook(row.dataset.bookId, { rating: newRating || null });
         if (!updated) return;
+        libraryBooks.set(updated.id, updated);
         paintStars(stars, newRating);
         showSaved();
     });
@@ -393,8 +411,9 @@ function wireLibraryEvents() {
         if (!confirm(`Remove "${title}"? You can't undo this.`)) return;
         const ok = await deleteBook(row.dataset.bookId);
         if (ok) {
+            libraryBooks.delete(row.dataset.bookId);
             row.remove();
-            updateSummary();
+            applyActiveFilter();
             showSaved();
         }
     });
@@ -414,21 +433,39 @@ function wireFilterEvents() {
     });
 }
 
+// Does this row's book fall inside the date range?
+function rowInDateRange(row) {
+    const book = libraryBooks.get(row.dataset.bookId);
+    return book ? matchesDateFilter(book, dateFilter) : true;
+}
+
+// Show the rows that pass both the shelf buttons and the date range.
 function applyActiveFilter() {
     const active = document.querySelector(".filter-btn.active");
     const filter = active ? active.dataset.filter : "all";
-    document.querySelectorAll("#book-tbody tr").forEach((row) => {
-        row.hidden = (filter !== "all" && row.dataset.shelf !== filter);
+    const rows = Array.from(document.querySelectorAll("#book-tbody tr"));
+    rows.forEach((row) => {
+        const shelfOk = (filter === "all" || row.dataset.shelf === filter);
+        row.hidden = !(shelfOk && rowInDateRange(row));
     });
+
+    // Books exist but none are showing: say so, rather than an empty table.
+    const noMatch = rows.length > 0 && rows.every((row) => row.hidden);
+    document.getElementById("library-no-match").hidden = !noMatch;
+    document.getElementById("book-table").hidden = rows.length === 0;
+
+    updateDateFilterControls();
     updateSummary();
 }
 
 function updateSummary() {
     const rows = Array.from(document.querySelectorAll("#book-tbody tr"));
 
-    // Shelf totals for the filter pills, whichever filter is active.
-    const counts = { "all": rows.length, "read": 0, "currently-reading": 0, "to-read": 0 };
-    rows.forEach((r) => {
+    // Shelf totals for the filter pills, whichever shelf is active. They do
+    // follow the date range, so each pill says how many books would go.
+    const counts = { "all": 0, "read": 0, "currently-reading": 0, "to-read": 0 };
+    rows.filter(rowInDateRange).forEach((r) => {
+        counts.all++;
         if (counts[r.dataset.shelf] !== undefined) counts[r.dataset.shelf]++;
     });
     document.querySelectorAll(".filter-btn").forEach((btn) => {
@@ -443,6 +480,90 @@ function updateSummary() {
     if (!el) return;
     el.textContent = `${visible.length} book${visible.length === 1 ? "" : "s"} · `
         + `${toCheck} date${toCheck === 1 ? "" : "s"} to check`;
+}
+
+
+// Keep the date controls in step with the filter: the count on the "no dates"
+// checkbox, whether that checkbox and Clear do anything yet, and the warning
+// for a range that runs backwards.
+function updateDateFilterControls() {
+    const active = isDateFilterActive(dateFilter);
+    const { undatedCount } = applyDateFilter([...libraryBooks.values()], dateFilter);
+
+    const checkbox = document.getElementById("include-undated");
+    checkbox.disabled = !active;
+    checkbox.checked = dateFilter.includeUndated;
+    document.getElementById("include-undated-label").textContent =
+        undatedCount === 1
+            ? "Include 1 book with no dates"
+            : `Include ${undatedCount} books with no dates`;
+
+    document.getElementById("date-clear").hidden = !active;
+
+    const backwards = isDateRangeBackwards(dateFilter);
+    document.getElementById("date-filter-error").hidden = !backwards;
+    document.getElementById("date-filter-hint").hidden = backwards;
+}
+
+function wireDateFilterEvents() {
+    const from = document.getElementById("date-from");
+    const to = document.getElementById("date-to");
+    const undated = document.getElementById("include-undated");
+
+    // `change` fires once a full date has been picked or typed, not on every
+    // keystroke, so the table doesn't flicker while someone is typing a year.
+    from.addEventListener("change", () => { dateFilter.from = from.value; applyActiveFilter(); });
+    to.addEventListener("change", () => { dateFilter.to = to.value; applyActiveFilter(); });
+    undated.addEventListener("change", () => {
+        dateFilter.includeUndated = undated.checked;
+        applyActiveFilter();
+    });
+
+    document.getElementById("date-clear").addEventListener("click", () => {
+        dateFilter.from = "";
+        dateFilter.to = "";
+        dateFilter.includeUndated = false;
+        from.value = "";
+        to.value = "";
+        applyActiveFilter();
+        from.focus();
+    });
+}
+
+// "1 Jan 2024", for the export page's notice. The date is read as UTC so the
+// local time zone can't move it back a day.
+function formatDay(iso) {
+    return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
+        day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
+    });
+}
+
+// The library as it will be exported: the whole thing, minus anything outside
+// the date range. The shelf buttons deliberately play no part here.
+async function getExportBooks() {
+    const library = await getBooks();
+    return { library, books: applyDateFilter(library, dateFilter).kept };
+}
+
+// Tell the user, on the export page, when the date range is shrinking the file.
+function renderDateFilterNote(books, library) {
+    const note = document.getElementById("date-filter-note");
+    if (!isDateFilterActive(dateFilter)) {
+        note.hidden = true;
+        return;
+    }
+
+    const { from, to } = dateFilter;
+    let title;
+    if (from && to) title = `Only books from ${formatDay(from)} to ${formatDay(to)}`;
+    else if (from)  title = `Only books from ${formatDay(from)} onwards`;
+    else            title = `Only books up to ${formatDay(to)}`;
+    document.getElementById("date-filter-note-title").textContent = title;
+
+    const undatedText = dateFilter.includeUndated ? ", including books with no dates" : "";
+    document.getElementById("date-filter-note-detail").textContent =
+        `That's ${books.length} of the ${library.length} books in your library${undatedText}.`;
+    note.hidden = false;
 }
 
 
@@ -468,7 +589,8 @@ async function renderExport() {
 // one file, so they are all computed from a single partition. Re-run whenever
 // the chosen destination changes, because the rules differ per destination.
 async function refreshExportPreview() {
-    const books = await getBooks();
+    const { library, books } = await getExportBooks();
+    renderDateFilterNote(books, library);
     const target = getTarget(selectedTargetId);
     const { included, excluded } = partitionBooks(books, target.id);
 
@@ -612,9 +734,13 @@ function renderHeldBack(excluded, target) {
 }
 
 async function doDownload() {
-    const books = await getBooks();
-    if (books.length === 0) {
+    const { library, books } = await getExportBooks();
+    if (library.length === 0) {
         alert("No books to export yet. Connect to Fable first.");
+        return;
+    }
+    if (books.length === 0) {
+        alert("No books match your date range. Change the dates on the library page.");
         return;
     }
 
@@ -707,6 +833,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("held-back-link").addEventListener("click", (e) => {
         e.preventDefault(); showView("library");
     });
+    document.getElementById("date-filter-change").addEventListener("click", (e) => {
+        e.preventDefault();
+        showView("library");
+        document.getElementById("date-from").focus();
+    });
     document.getElementById("back-to-intro").addEventListener("click", (e) => {
         e.preventDefault(); showView("intro");
     });
@@ -726,6 +857,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     wireLibraryEvents();
     wireFilterEvents();
+    wireDateFilterEvents();
     wireKofiLinks();
     showVersion();
 

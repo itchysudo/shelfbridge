@@ -207,6 +207,37 @@
                     <p class="summary" id="summary" aria-live="polite"></p>
                 </div>
 
+                <!-- Date range. Unlike the shelf buttons, this limits the
+                     export as well as the table, for people who only want
+                     to move what they've logged since a given date. The
+                     rules live in dateFilter.js. -->
+                <fieldset class="date-filter">
+                    <legend class="label">Only export books from a period</legend>
+                    <div class="date-filter-fields">
+                        <div class="field">
+                            <label for="date-from">From</label>
+                            <input type="date" id="date-from" class="date-input">
+                        </div>
+                        <div class="field">
+                            <label for="date-to">To</label>
+                            <input type="date" id="date-to" class="date-input">
+                        </div>
+                        <label class="check-field">
+                            <input type="checkbox" id="include-undated" disabled>
+                            <span id="include-undated-label">Include books with no dates</span>
+                        </label>
+                        <button type="button" id="date-clear" class="btn btn-link" hidden>Clear dates</button>
+                    </div>
+                    <p class="small text-muted" id="date-filter-hint">
+                        Uses each book's finish date, or its start date if it
+                        isn't finished. Books outside the dates are left out
+                        of your export.
+                    </p>
+                    <p class="small date-filter-error" id="date-filter-error" role="alert" hidden>
+                        From is after To, so no books match. Swap the dates round.
+                    </p>
+                </fieldset>
+
                 <div class="table-wrap">
                     <div id="library-empty" class="empty-state" hidden>
                         <span class="empty-icon">
@@ -233,6 +264,13 @@
                         </thead>
                         <tbody id="book-tbody"></tbody>
                     </table>
+
+                    <!-- Shown when there are books, but the shelf and date
+                         filters hide every one of them. -->
+                    <div id="library-no-match" class="empty-state" hidden>
+                        <h2 class="h4">No books match these filters</h2>
+                        <p class="small text-muted">Try another shelf, or widen the dates.</p>
+                    </div>
                 </div>
             </div>
 
@@ -266,6 +304,19 @@
 
             <div class="export-layout">
                 <div class="export-main">
+                    <!-- Shown when the library's date filter is limiting the
+                         file, so a smaller export is never a surprise. -->
+                    <div id="date-filter-note" class="alert alert-info" role="note" hidden>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                        <div class="alert-body">
+                            <p class="alert-title" id="date-filter-note-title"></p>
+                            <p class="alert-detail">
+                                <span id="date-filter-note-detail"></span>
+                                <a href="#" id="date-filter-change">Change the dates</a>
+                            </p>
+                        </div>
+                    </div>
+
                     <!-- Books this destination can't be given, and why. Only
                          appears when there are some. Named rather than
                          silently dropped: a missing book you know about is a
@@ -411,7 +462,8 @@
                     <ul>
                         <li><strong>Edit any cell:</strong> title, author, shelf, dates, rating or ISBN.</li>
                         <li><strong>Rate a book, half stars included:</strong> select the left half of a star for the half, or the right half for the whole star. Select the same spot again to clear it.</li>
-                        <li><strong>Filter by shelf:</strong> use the buttons above the table.</li>
+                        <li><strong>Filter by shelf:</strong> use the buttons above the table. This only changes what you see; the export still has every shelf.</li>
+                        <li><strong>Export only part of your library:</strong> set a From date, a To date or both. Books outside them are left out of your export, which helps if you moved to Fable from somewhere else and only want what you've logged since. A book is placed by its finish date, or its start date if it isn't finished. Books with no dates at all are left out unless you tick <strong>Include books with no dates</strong>.</li>
                         <li><strong>Remove a book:</strong> select <strong>Remove</strong> at the end of its row.</li>
                     </ul>
 
