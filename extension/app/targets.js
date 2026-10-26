@@ -88,7 +88,8 @@ function pickDateAdded(book) {
 //   Goodreads   whole stars only, so it flattens them
 //   StoryGraph  its Goodreads importer rounds: 3.5 arrives as 4
 //   Pagebound   keeps halves (3.5 stays 3.5), rounds quarters (4.25 -> 4)
-// Fable only does halves, so Pagebound is the one route that loses nothing.
+// Fable rates in quarter stars (4.75 and 4.25 are real values), so nowhere
+// keeps every rating exactly; Pagebound comes closest.
 function decimalRating(rating) {
     return Number.isInteger(rating) ? `${rating}.0` : String(rating);
 }
@@ -238,6 +239,10 @@ const GOODREADS_IMPORT_FORMAT = {
             "Date Added":      pickDateAdded(book),
             "Exclusive Shelf": book.shelf || "",
             "Bookshelves":     book.shelf || "",
+            // Only there when the person chose to include reviews; app.js
+            // strips them otherwise. "Spoiler" stays empty: what a real
+            // Goodreads export writes in it hasn't been checked yet.
+            "My Review":       book.review || "",
         };
     },
 };
@@ -293,6 +298,7 @@ const GOODREADS_EXPORT_FORMAT = {
             "Date Added":      pickDateAdded(book),
             "Bookshelves":     book.shelf || "",
             "Exclusive Shelf": book.shelf || "",
+            "My Review":       book.review || "",
             "Read Count":      book.shelf === "read" ? 1 : 0,
             // Always 0 in a real export unless you track physical copies, which
             // Fable has no concept of.
@@ -368,7 +374,7 @@ const STORYGRAPH_FORMAT = {
             // formats. Fractions pass through untouched, which is the whole
             // reason this format is worth having.
             "Star Rating": book.rating ? decimalRating(book.rating) : "",
-            "Review":      "",
+            "Review":      book.review || "",
             "Tags":        "",
             "Owned?":      "No",
         };
@@ -392,8 +398,14 @@ const goodreads = {
     // make choosing between destinations easy.
     summary: {
         keeps: ["Your shelves", "Whole-star ratings", "Finish dates"],
-        loses: ["Half stars", "Start dates", "Reviews"],
+        loses: ["Half stars", "Start dates"],
     },
+
+    // Shown under "Include my written reviews". reviewsConfirmed stays false
+    // until a real import has shown the review arriving; the page says so.
+    reviewNote: "Goodreads shows reviews on your profile, where anyone can " +
+                "see them, so only tick this if you're happy for them to appear there.",
+    reviewsConfirmed: false,
 
     // Each step is {before, href, linkText, after}. Only `before` is required;
     // the link and `after` let a step put a link mid-sentence rather than
@@ -414,8 +426,8 @@ const goodreads = {
         "<strong>Start dates don't come across.</strong> We put your Fable " +
         "start date in Date Added, but Goodreads throws that value away on " +
         "import and stamps its own. Nothing we can do from this end.",
-        "<strong>Reviews aren't accepted</strong> by Goodreads' importer, and " +
-        "half-star ratings get rounded because Goodreads only does whole stars.",
+        "<strong>Half-star ratings get rounded</strong> because Goodreads only " +
+        "does whole stars.",
     ],
 };
 
@@ -439,6 +451,9 @@ const storygraph = {
         // that can't carry it, not the app that lacks it.
         loses: ["Half stars (rounded up)", "Start dates (left blank)"],
     },
+
+    reviewNote: "Your reviews go in the file's My Review column.",
+    reviewsConfirmed: false,
 
     // The single most confusing thing about this option: you pick StoryGraph
     // and get a file with Goodreads in the name. Said plainly, next to the
@@ -505,6 +520,9 @@ const pagebound = {
                 "Books with no ISBN",
                 "Books Pagebound doesn't already have"],
     },
+
+    reviewNote: "Your reviews go in the file's Review column.",
+    reviewsConfirmed: false,
 
     fileNote: "Your file will be called <code>storygraph_library_export.csv</code>. " +
               "That's deliberate: Pagebound accepts StoryGraph files as well as " +

@@ -14,7 +14,7 @@ When you click **Connect to Fable**, the extension:
 
 1. Looks for a logged-in fable.co tab in your browser, or opens one for you to sign into.
 2. Watches the headers that Fable's own web app sends to its API, so the extension can make the same authenticated requests on your behalf.
-3. Calls `api.fable.co` to read your shelves: titles, authors, ISBNs, cover images, start dates, finish dates and any star ratings.
+3. Calls `api.fable.co` to read your shelves (titles, authors, ISBNs, cover images, start dates and finish dates) and the ratings and written reviews you've left on Fable.
 
 That's the entire scope. It doesn't read your other tabs, your history, your saved passwords or anything else on your computer.
 
@@ -46,7 +46,7 @@ There's no backend server I run. There are no analytics, no telemetry and no tra
 - `fable.co` and `api.fable.co`, Fable's own services, to read your library. These requests come from your browser, as your signed-in user, exactly the way Fable's web app does it.
 - Google's Apps Script service (`script.google.com`), and only when you press Send on the feedback form.
 
-When you download a file for Goodreads, StoryGraph or Pagebound, it's generated in your browser and saved to your computer. It's up to you to decide whether, and when, to upload it.
+When you download a file for Goodreads, StoryGraph or Pagebound, it's generated in your browser and saved to your computer. It's up to you to decide whether, and when, to upload it. Your written reviews only go into the file if you tick the box to include them. Bear in mind that on Goodreads, an imported review appears on your public profile.
 
 ## The permissions, and why each one
 

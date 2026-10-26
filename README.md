@@ -90,15 +90,15 @@ When you're done, close the terminal window or hit Ctrl+C inside it to stop the 
 
 Whichever option you picked, the wizard is the same three steps:
 
-1. **Connect to Fable.** Click the Connect button. The tool opens Fable in another tab and pops the login modal for you. Sign in as you normally would, then come back and click Connect again. The tool reads your shelves, which usually takes between ten and sixty seconds.
+1. **Connect to Fable.** Click the Connect button. The tool opens Fable in another tab and pops the login modal for you. Sign in as you normally would, then come back and click Connect again. The tool reads your shelves, along with the ratings and written reviews you've left, which usually takes between ten and sixty seconds.
 2. **Review your library.** A table of every book appears. Have a quick scroll through to check the titles, authors, dates and ISBNs look right. You can click any cell to edit it, set a rating on the stars (click the left half of a star for a half star), and use Remove on each row to drop a book you don't want to take with you. To drop lots at once, tick the box at the start of each row (hold Shift to tick a run of them, or use the box at the top to tick every book on show) and select Remove selected. Only books on show can be ticked, so pairing this with the shelf buttons or the date range is a quick way to clear out a whole group. Everything saves as you go. If you only want to move part of your library, say everything you've logged since you switched to Fable, set a From or To date above the table and only books in that period go into the file. A book is placed by its finish date, or its start date if you haven't finished it, and books with no dates at all are left out unless you tick the box to include them. The shelf buttons and the Sort by menu, by contrast, only change what you see. Sort by puts the list in order of title, author, finish date, start date or rating, either way round, with any book that has nothing to sort on at the bottom.
-3. **Pick where it's going and download.** Choose Goodreads, StoryGraph or Pagebound. The page shows you what comes across for that one and walks you through importing it.
+3. **Pick where it's going and download.** Choose Goodreads, StoryGraph or Pagebound. The page shows you what comes across for that one and walks you through importing it. If any of your books have a written review, there's a box to include them in the file. It's off unless you tick it, every time, because on Goodreads a review is public.
 
 ---
 
 ## What comes across, and what doesn't
 
-Everything in this table was checked by actually importing into a real account, not read off a help page.
+Everything in this table was checked by actually importing into a real account, not read off a help page. The one exception is reviews, which are still being tested.
 
 | | Goodreads | StoryGraph | Pagebound |
 |---|---|---|---|
@@ -107,12 +107,12 @@ Everything in this table was checked by actually importing into a real account, 
 | Finish dates | yes | yes | yes |
 | Half-star ratings | rounded | rounded | **kept** |
 | Start dates | no | no | no |
-| Reviews | no | no | no |
+| Written reviews, if you tick the box | being tested | being tested | being tested |
 | Every book | yes | yes | only ones it already has, and only with an ISBN |
 
 **Start dates don't come across anywhere.** All three apps can store one, but none of the file formats they'll accept has a column to carry it, so the field is left blank and you'd have to fill it in yourself. Finish dates are fine everywhere.
 
-**Half stars only survive on Pagebound.** Goodreads can't store them at all. StoryGraph can, but its Goodreads importer rounds them on the way in, so a 3.5 lands as a 4.
+**Half stars only survive on Pagebound.** Goodreads can't store them at all. StoryGraph can, but its Goodreads importer rounds them on the way in, so a 3.5 lands as a 4. Fable also rates in quarter stars, and nowhere keeps those: Pagebound rounds a 4.25 to a 4.
 
 **Pagebound may not take everything.** It only brings across books that already exist in its own library, so anything it hasn't got a record of gets skipped. Pagebound says this on its upload page, and it also calls that import route beta. Worth checking your count after an import.
 
@@ -181,7 +181,7 @@ First check you picked the matching option, as above. If you did, the app couldn
 
 ## Privacy
 
-Everything happens on your own computer or inside your own browser. Your Fable password isn't seen or stored by the tool, you sign in on Fable's own site. The only place the tool talks to outside your machine is Fable's own API at `api.fable.co`, to read your shelves. See [PRIVACY.md](PRIVACY.md) for the full write-up.
+Everything happens on your own computer or inside your own browser. Your Fable password isn't seen or stored by the tool, you sign in on Fable's own site. The only place the tool talks to outside your machine is Fable's own API at `api.fable.co`, to read your shelves, ratings and reviews. See [PRIVACY.md](PRIVACY.md) for the full write-up.
 
 ---
 
@@ -201,6 +201,8 @@ This repo has both variants of the tool:
 | `requirements.txt` | Python deps. |
 
 Both variants share the same header-snooping approach against `api.fable.co`. A naive `Authorization: Bearer <jwt>` returns 403, so the tool watches the SPA's own outgoing requests (via `chrome.webRequest` in the extension, `page.on("request")` in Playwright) and replays those headers verbatim.
+
+In the extension, ratings come from your Fable reviews (`/api/users/{id}/reviews/`), not the shelves. Rating a book in the Fable app saves the rating on a review, even one with no text, and leaves the shelf entry's `user_rating` empty. The shelf value is only used as a fallback. The Flask app still reads `user_rating` alone.
 
 ### Adding a destination
 

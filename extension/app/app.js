@@ -696,7 +696,43 @@ function formatDay(iso) {
 // the date range. The shelf buttons deliberately play no part here.
 async function getExportBooks() {
     const library = await getBooks();
-    return { library, books: applyDateFilter(library, dateFilter).kept };
+    const kept = applyDateFilter(library, dateFilter).kept;
+    const books = includeReviews
+        ? kept
+        : kept.map((b) => (b.review ? { ...b, review: null, review_spoiler: false } : b));
+    return { library, books, withReview: kept.filter((b) => b.review) };
+}
+
+// Whether written reviews go in the file. In memory and off each time the app
+// opens: on Goodreads a review is public, so it should always be a fresh
+// choice rather than one left over from a past visit.
+let includeReviews = false;
+
+// The "Include my written reviews" box: shown only when a book in this export
+// has one, and worded for the chosen destination.
+function renderReviewsOption(withReview, target) {
+    const box = document.getElementById("reviews-option");
+    if (withReview.length === 0) {
+        box.hidden = true;
+        return;
+    }
+    const n = withReview.length;
+    document.getElementById("include-reviews").checked = includeReviews;
+    document.getElementById("include-reviews-label").textContent =
+        `Include my written reviews (${n} book${n === 1 ? "" : "s"})`;
+
+    const spoilers = withReview.filter((b) => b.review_spoiler).length;
+    const parts = [target.reviewNote];
+    if (!target.reviewsConfirmed) {
+        parts.push(`We haven't yet confirmed that ${target.label} keeps them when it imports the file.`);
+    }
+    if (spoilers) {
+        parts.push(spoilers === 1
+            ? "One is marked as a spoiler in Fable, and won't be hidden there."
+            : `${spoilers} are marked as spoilers in Fable, and won't be hidden there.`);
+    }
+    document.getElementById("reviews-note").textContent = parts.join(" ");
+    box.hidden = false;
 }
 
 // Tell the user, on the export page, when the date range is shrinking the file.
@@ -743,9 +779,10 @@ async function renderExport() {
 // one file, so they are all computed from a single partition. Re-run whenever
 // the chosen destination changes, because the rules differ per destination.
 async function refreshExportPreview() {
-    const { library, books } = await getExportBooks();
+    const { library, books, withReview } = await getExportBooks();
     renderDateFilterNote(books, library);
     const target = getTarget(selectedTargetId);
+    renderReviewsOption(withReview, target);
     const { included, excluded } = partitionBooks(books, target.id);
 
     // Say "426 of 478" when some are held back, so the number on the page
@@ -1223,6 +1260,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     // The empty state's "Connect to Fable" does the same as Start over.
     document.getElementById("empty-connect-btn").addEventListener("click", () => showView("intro"));
     document.getElementById("download-btn").addEventListener("click", doDownload);
+    document.getElementById("include-reviews").addEventListener("change", (event) => {
+        includeReviews = event.target.checked;
+    });
 
     document.getElementById("help-link").addEventListener("click", (e) => {
         e.preventDefault();

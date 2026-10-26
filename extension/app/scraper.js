@@ -223,9 +223,17 @@ async function fetchAllBooks(tabId, capturedHeaders) {
                 }
             }
 
-            function mapEntry(entry, shelf) {
+            // A rating as Fable sends it ("4.75", 3, null) as a number, or
+            // null for no rating. Fable has no zero-star rating, so 0 is none.
+            function toRating(raw) {
+                const n = parseFloat(raw);
+                return Number.isFinite(n) && n > 0 ? n : null;
+            }
+
+            function mapEntry(entry, shelf, reviews) {
                 const book = entry.book || {};
                 if (!book.title) return null;
+                const review = reviews.get(book.id);
                 // Dedupe author names (Fable occasionally returns dupes).
                 const authors = book.authors || [];
                 const seen = new Set();
@@ -248,7 +256,11 @@ async function fetchAllBooks(tabId, capturedHeaders) {
                                              book.started_reading_at,
                                              book.started_reading_date_type),
                     date_started_type:   book.started_reading_date_type || null,
-                    rating:              book.user_rating || null,
+                    // The review's rating first: rating a book in the Fable
+                    // app saves it there, and leaves user_rating empty.
+                    rating:              (review && review.rating) ?? toRating(book.user_rating),
+                    review:              (review && review.text) || null,
+                    review_spoiler:      Boolean(review && review.text && review.spoiler),
                     isbn:                book.isbn || book.display_isbn || null,
                     cover_url:           book.cover_image || null,
                 };
@@ -274,6 +286,34 @@ async function fetchAllBooks(tabId, capturedHeaders) {
                     "Couldn't find any built-in Fable shelves on your account.");
             }
 
+            // Ratings and written reviews, by book id. In Fable, rating a book
+            // creates a review even with no text, and that's the only place
+            // the rating is kept: the shelves' user_rating stays null. One
+            // paged list covers every book.
+            //
+            // Not fatal if it fails: the library still comes across, just
+            // without these, which is how ShelfBridge behaved before.
+            const reviews = new Map();
+            try {
+                let url = `https://api.fable.co/api/users/${userId}/reviews/?limit=100`;
+                while (url) {
+                    const page = await api(url);
+                    const results = Array.isArray(page) ? page : (page.results || []);
+                    for (const r of results) {
+                        const id = r && r.book && r.book.id;
+                        if (!id) continue;
+                        reviews.set(id, {
+                            rating:  toRating(r.rating),
+                            text:    String(r.review || "").trim(),
+                            spoiler: Boolean(r.contains_spoilers),
+                        });
+                    }
+                    url = Array.isArray(page) ? null : page.next;
+                }
+            } catch (e) {
+                reviews.clear();
+            }
+
             const allBooks = [];
             for (const list of systemLists) {
                 const shelf = SHELF_MAP[list.system_type] || "to-read";
@@ -281,7 +321,7 @@ async function fetchAllBooks(tabId, capturedHeaders) {
                 while (url) {
                     const page = await api(url);
                     for (const entry of (page.results || [])) {
-                        const mapped = mapEntry(entry, shelf);
+                        const mapped = mapEntry(entry, shelf, reviews);
                         if (mapped) allBooks.push(mapped);
                     }
                     url = page.next;  // null when no more pages

@@ -407,6 +407,17 @@
                         </div>
                     </div>
 
+                    <!-- Written reviews. Off unless ticked each time, because
+                         some destinations publish them. Only shown when a
+                         book in this export has one. -->
+                    <div id="reviews-option" class="card reviews-option" hidden>
+                        <label class="check-field">
+                            <input type="checkbox" id="include-reviews">
+                            <span id="include-reviews-label">Include my written reviews</span>
+                        </label>
+                        <p class="small text-muted" id="reviews-note"></p>
+                    </div>
+
                     <section class="card file-card" aria-labelledby="export-filename">
                         <div class="file-info">
                             <span class="square-icon">

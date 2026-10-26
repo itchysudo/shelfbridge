@@ -39,6 +39,12 @@ export const RELEASES = [
                 source: "Requested on Reddit",
             },
             {
+                icon: "star",
+                title: "Your ratings and reviews come too",
+                text: "Ratings you gave in the Fable app now come across, and you can bring your written reviews as well.",
+                source: "Requested on Reddit",
+            },
+            {
                 icon: "sort",
                 title: "Sort your books your way",
                 text: "Order your library by title, author, finish date or rating before you export.",

@@ -233,5 +233,55 @@ check("a 979 ISBN passes through",
 
 
 // ---------------------------------------------------------------------------
+console.log("\nWritten reviews");
+// ---------------------------------------------------------------------------
+// A review is free text, so it's the one value here that will contain commas,
+// quotes and line breaks. app.js decides whether reviews go in at all; these
+// pin where each format puts one, and that the file still parses.
+
+const reviewed = { title: "Heavenly Bodies", author: "Someone", isbn: "9781635575637",
+                   shelf: "read", rating: 3, review: 'Loved it, mostly.\nThe "twist" less so.' };
+
+// Just enough of a CSV reader to undo escapeCell: quoted cells, doubled
+// quotes, and line breaks inside quotes.
+function parseCSV(text) {
+    const rows = [[]];
+    let cell = "", quoted = false;
+    for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (quoted) {
+            if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+            else if (c === '"') quoted = false;
+            else cell += c;
+        } else if (c === '"') quoted = true;
+        else if (c === ",") { rows.at(-1).push(cell); cell = ""; }
+        else if (c === "\r") continue;
+        else if (c === "\n") { rows.at(-1).push(cell); cell = ""; rows.push([]); }
+        else cell += c;
+    }
+    return rows.filter((r) => r.length > 1);
+}
+
+function cellOf(targetId, book, column) {
+    const [header, row] = parseCSV(generateCSV([book], targetId));
+    return row[header.indexOf(column)];
+}
+
+check("goodreads puts the review in My Review",
+    cellOf("goodreads", reviewed, "My Review"), reviewed.review);
+check("storygraph puts the review in My Review",
+    cellOf("storygraph", reviewed, "My Review"), reviewed.review);
+check("pagebound puts the review in Review",
+    cellOf("pagebound", reviewed, "Review"), reviewed.review);
+check("a review with commas, quotes and a line break is still one row",
+    parseCSV(generateCSV([reviewed, withIsbn], "goodreads")).length, 3);
+check("a book with no review leaves the column empty",
+    cellOf("goodreads", withIsbn, "My Review"), "");
+check("every destination says something about reviews",
+    TARGETS.every((t) => typeof t.reviewNote === "string" && t.reviewNote.length > 0
+                         && typeof t.reviewsConfirmed === "boolean"), true);
+
+
+// ---------------------------------------------------------------------------
 console.log(failures === 0 ? "\nAll passed.\n" : `\n${failures} failed.\n`);
 process.exit(failures === 0 ? 0 : 1);
