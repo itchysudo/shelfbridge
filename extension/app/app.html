@@ -82,7 +82,7 @@
                 <div class="tile tile-amber">
                     <div class="tile-body">
                         <p class="tile-figure">Free</p>
-                        <p>Open source, MIT licence. No sign-up.</p>
+                        <p>No sign-up and no adverts.</p>
                     </div>
                     <!-- Unhidden by app.js only when a Ko-fi link is configured. -->
                     <a id="kofi-welcome-link" class="btn btn-kofi" href="#" target="_blank" rel="noopener" hidden>
@@ -129,10 +129,9 @@
                         See everything that's new
                         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                     </a>
-                    <a href="https://github.com/itchysudo/shelfbridge/issues/new" target="_blank" rel="noopener" class="btn btn-link">
-                        Got an idea? Tell us on GitHub
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3"/></svg>
-                    </a>
+                    <button type="button" class="btn btn-link needs-feedback" data-open-feedback="idea" hidden>
+                        Got an idea? Tell us
+                    </button>
                 </div>
             </section>
 
@@ -161,7 +160,7 @@
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
                 <div class="alert-body">
                     <p class="alert-title">Your books are stored in this browser only</p>
-                    <p class="alert-detail">Nothing is sent to us. The only outside service ShelfBridge talks to is Fable's API, to read your shelves.</p>
+                    <p class="alert-detail">Nothing about your books is sent to us. ShelfBridge reads your shelves from Fable's API, and the only other thing it ever sends is feedback, if you choose to send some.</p>
                 </div>
             </div>
         </section>
@@ -576,9 +575,16 @@
                     <p>
                         Everything runs in your own browser. Your books are
                         stored in this browser's extension storage and never
-                        sent to a server we run. The only outside service is
-                        Fable's own API (<code>api.fable.co</code>), to read
-                        your shelves.
+                        sent to us. ShelfBridge reads your shelves from Fable's
+                        own API (<code>api.fable.co</code>).
+                    </p>
+                    <p>
+                        The only other thing ShelfBridge ever sends is feedback,
+                        and only when you choose to send some. That's what you
+                        type, the version of ShelfBridge you're using and your
+                        email if you give one, and it goes to the developer's
+                        private request list. Nothing about your books goes
+                        with it.
                     </p>
                 </div>
             </div>
@@ -590,23 +596,20 @@
                         <span class="logo">ShelfBridge<span class="logo-dot" aria-hidden="true"></span></span>
                         <span class="mono text-muted">v<span id="version"></span></span>
                     </p>
-                    <p>
-                        Created by
-                        <a href="https://github.com/itchysudo" target="_blank" rel="noopener">itchysudo</a>.
-                        Released under the
-                        <a href="https://github.com/itchysudo/shelfbridge/blob/main/LICENSE" target="_blank" rel="noopener">MIT licence</a>.
-                    </p>
-                    <p>
-                        Source code:
-                        <a href="https://github.com/itchysudo/shelfbridge" target="_blank" rel="noopener">github.com/itchysudo/shelfbridge</a>
-                    </p>
+                    <p>Created by itchysudo.</p>
 
-                    <h3>Need help or found a bug?</h3>
-                    <p>
-                        <a href="https://github.com/itchysudo/shelfbridge/issues" target="_blank" rel="noopener">Open an issue on GitHub</a>.
-                        Search past issues first: someone may already have
-                        the answer.
-                    </p>
+                    <!-- Hidden until the feedback form is switched on. -->
+                    <div class="needs-feedback" hidden>
+                        <h3>Need help or found a bug?</h3>
+                        <p>
+                            Tell us what happened, and what you were doing at
+                            the time. Leave your email if you'd like a reply.
+                        </p>
+                        <div class="actions">
+                            <button type="button" class="btn btn-primary" data-open-feedback="bug">Report a bug</button>
+                            <button type="button" class="btn btn-link" data-open-feedback="idea">Suggest an idea</button>
+                        </div>
+                    </div>
 
                     <!-- Unhidden by app.js only when a Ko-fi link is configured. -->
                     <p id="kofi-about" hidden>
@@ -637,34 +640,124 @@
                 </p>
             </div>
 
-            <!-- Built from releases.js. -->
+            <!-- Built from RELEASES in releases.js. -->
             <div class="release-list" id="release-list"></div>
 
-            <!-- The roadmap lives on GitHub so it can change between
-                 releases. A link, not a fetch: the app itself still talks
-                 to nothing but Fable. -->
-            <section class="card roadmap-card" aria-labelledby="roadmap-heading">
+            <!-- The roadmap, from COMING_NEXT in releases.js. It ships with
+                 each release, because the app fetches nothing. -->
+            <section class="release" aria-labelledby="coming-next-heading">
+                <div class="release-meta">
+                    <span class="badge badge-info">
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg>
+                        Roadmap
+                    </span>
+                </div>
+                <h2 class="h3" id="coming-next-heading">What's coming next</h2>
+                <ul class="update-cards" id="coming-next"></ul>
+            </section>
+
+            <section class="card roadmap-card needs-feedback" aria-labelledby="idea-heading" hidden>
                 <span class="square-icon">
-                    <svg class="icon icon-24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg>
+                    <svg class="icon icon-24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
                 </span>
                 <div class="roadmap-body">
-                    <h2 class="h4" id="roadmap-heading">What's coming next</h2>
-                    <p class="text-muted">See what's planned, and help decide what gets built after that.</p>
+                    <h2 class="h4" id="idea-heading">Got an idea?</h2>
+                    <p class="text-muted">Tell us what you'd like ShelfBridge to do next. Requests from people moving their libraries decide what gets built.</p>
                 </div>
                 <div class="actions">
-                    <a href="https://github.com/itchysudo/shelfbridge/blob/main/ROADMAP.md" target="_blank" rel="noopener" class="btn btn-primary">
-                        See the roadmap
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3"/></svg>
-                    </a>
-                    <a href="https://github.com/itchysudo/shelfbridge/issues/new" target="_blank" rel="noopener" class="btn btn-link">
-                        Suggest an idea
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3"/></svg>
-                    </a>
+                    <button type="button" class="btn btn-primary" data-open-feedback="idea">Suggest an idea</button>
                 </div>
             </section>
 
             <div class="actions">
                 <a href="#" id="back-from-whats-new" class="btn btn-link">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                    Back
+                </a>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- View: FEEDBACK (send an idea or bug report to the request sheet) -->
+        <!-- ============================================================== -->
+        <!-- Rules in feedback.js; the sheet side is tools/feedback-sheet.gs. -->
+        <section class="view page" data-view="feedback" hidden>
+            <div class="page-header">
+                <h1>Send feedback</h1>
+                <p class="lead">
+                    Got an idea, or has something gone wrong? Tell us here.
+                    Every message is read, and good ideas end up on the roadmap.
+                </p>
+            </div>
+
+            <form id="feedback-form" class="card card-narrow feedback-form" novalidate>
+                <fieldset class="field">
+                    <legend>What's it about?</legend>
+                    <div class="choice-list" id="fb-type-options" aria-describedby="fb-type-error"></div>
+                    <p class="field-error" id="fb-type-error" hidden></p>
+                </fieldset>
+
+                <div class="field">
+                    <label for="fb-title">In a few words</label>
+                    <input type="text" id="fb-title" class="text-input" maxlength="120"
+                           autocomplete="off" aria-describedby="fb-title-error">
+                    <p class="field-error" id="fb-title-error" hidden></p>
+                </div>
+
+                <div class="field">
+                    <label for="fb-details">Tell us more</label>
+                    <textarea id="fb-details" class="text-input" rows="6" maxlength="2000"
+                              aria-describedby="fb-details-hint fb-details-error"></textarea>
+                    <p class="small text-muted" id="fb-details-hint">
+                        If something's not working, say what you selected and
+                        what happened.
+                    </p>
+                    <p class="field-error" id="fb-details-error" hidden></p>
+                </div>
+
+                <div class="field">
+                    <label for="fb-email">Your email (optional)</label>
+                    <input type="email" id="fb-email" class="text-input" maxlength="200"
+                           autocomplete="email" aria-describedby="fb-email-hint fb-email-error">
+                    <p class="small text-muted" id="fb-email-hint">Only if you'd like a reply. It's only used to answer you.</p>
+                    <p class="field-error" id="fb-email-error" hidden></p>
+                </div>
+
+                <!-- Trap for bots: hidden from people and screen readers, so
+                     anything typed here came from something filling every box. -->
+                <div class="trap-field" aria-hidden="true">
+                    <label for="fb-website">Leave this empty</label>
+                    <input type="text" id="fb-website" tabindex="-1" autocomplete="off">
+                </div>
+
+                <div class="alert alert-info" role="note">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    <div class="alert-body">
+                        <p class="alert-title">What gets sent</p>
+                        <p class="alert-detail">What you type here, your ShelfBridge version and your email if you give one. It goes to the developer's private request list. Nothing about your books is sent.</p>
+                    </div>
+                </div>
+
+                <p class="form-error" id="fb-send-error" role="alert" hidden></p>
+
+                <div class="actions">
+                    <button type="submit" id="fb-send" class="btn btn-primary">Send</button>
+                </div>
+            </form>
+
+            <div id="feedback-done" class="card card-narrow feedback-done" hidden tabindex="-1">
+                <span class="square-icon">
+                    <svg class="icon icon-24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                </span>
+                <h2 class="h3">Thanks, that's with us</h2>
+                <p class="text-muted" id="feedback-done-text"></p>
+                <div class="actions">
+                    <button type="button" id="fb-another" class="btn btn-link">Send another</button>
+                </div>
+            </div>
+
+            <div class="actions">
+                <a href="#" id="back-from-feedback" class="btn btn-link">
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
                     Back
                 </a>
@@ -692,9 +785,8 @@
         <div class="site-footer-inner">
             <p>Runs in your browser. Your Fable login is never stored.</p>
             <p>
-                v<span id="footer-version"></span> ·
-                <a href="https://github.com/itchysudo/shelfbridge/blob/main/LICENSE" target="_blank" rel="noopener">MIT licence</a> ·
-                <a href="https://github.com/itchysudo/shelfbridge" target="_blank" rel="noopener">Source on GitHub</a>
+                v<span id="footer-version"></span><span class="needs-feedback" hidden> ·
+                <button type="button" class="link-button" data-open-feedback="idea">Send feedback</button></span>
             </p>
         </div>
     </footer>

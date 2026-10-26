@@ -4,10 +4,9 @@
 // version as extension/manifest.json. tests/releases.test.mjs fails if the two
 // don't match, so a release can't go out with last month's notes.
 //
-// Everything here ships inside the extension. ShelfBridge promises to talk to
-// nothing but Fable, so release notes can't be fetched from the web. The
-// roadmap, which changes between releases, lives in ROADMAP.md on GitHub and
-// the app just links to it.
+// Everything here ships inside the extension, including the roadmap
+// (COMING_NEXT, below). The app doesn't fetch notes from anywhere, so both
+// are only as up to date as the last release: update them together.
 //
 // Writing an entry:
 //   * Lead with what the user can now do, in their words, not ours.
@@ -17,6 +16,9 @@
 //   * `source` credits where an idea came from, for example "Requested on
 //     Reddit". Never name the person without their say-so.
 //   * `icon` is a key of RELEASE_ICONS in app.js.
+//   * `requires: "feedback"` hides an item until the feedback form is switched
+//     on (FEEDBACK_URL in feedback.js), so the notes never point at a form
+//     that isn't there.
 
 export const RELEASES = [
     {
@@ -39,6 +41,12 @@ export const RELEASES = [
                 icon: "sparkles",
                 title: "A brighter, cleaner ShelfBridge",
                 text: "A whole new look, easier to read, with dark mode that follows your device.",
+            },
+            {
+                icon: "message",
+                title: "Tell us what you think",
+                text: "Send an idea or report a bug straight from ShelfBridge. Every message is read.",
+                requires: "feedback",
             },
         ],
     },
@@ -68,3 +76,19 @@ export const RELEASES = [
 
 // The newest release, which the welcome page shows.
 export const LATEST_RELEASE = RELEASES[0];
+
+// The roadmap: what's planned next, shown at the bottom of the What's new
+// page. Only promise what's genuinely planned, and move an item into RELEASES
+// when it ships. Same fields as a release item.
+export const COMING_NEXT = [
+    {
+        icon: "calendar",
+        title: "Dates that open properly in spreadsheets",
+        text: "Open your file in Excel or Numbers first and some dates show as ##### or change format. We're fixing that, without changing what the importers receive.",
+    },
+    {
+        icon: "check",
+        title: "Progress shelf by shelf",
+        text: "See Finished, Currently reading and Want to read tick off one by one while ShelfBridge reads your library.",
+    },
+];

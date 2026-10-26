@@ -736,6 +736,102 @@ a.logo:hover { color: var(--text); }
     gap: var(--space-1);
 }
 
+/* ---------- Feedback form ---------- */
+
+.feedback-form { gap: var(--space-5); }
+fieldset.field {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+}
+fieldset.field legend {
+    padding: 0;
+    margin-bottom: var(--space-2);
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+}
+.choice-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+.choice {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--control-height);
+    padding: 0 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    background: var(--bg);
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color var(--duration-fast) var(--ease-out),
+                background var(--duration-fast) var(--ease-out);
+}
+.choice:hover { border-color: var(--border-strong); }
+.choice:has(input:checked) {
+    background: var(--primary-subtle);
+    border-color: var(--primary);
+    color: var(--on-primary-subtle);
+}
+.choice input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--primary);
+}
+.text-input {
+    width: 100%;
+    min-height: var(--control-height);
+    padding: 10px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 24px;
+    transition: border-color var(--duration-fast) var(--ease-out);
+}
+textarea.text-input { resize: vertical; }
+.text-input:focus { border-color: var(--primary); }
+.text-input[aria-invalid="true"] { border-color: var(--danger); }
+.field-error,
+.form-error {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: var(--danger);
+}
+/* Off-screen rather than display: none, which some bots skip. */
+.trap-field {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+.feedback-done {
+    align-items: flex-start;
+    gap: var(--space-3);
+}
+.feedback-done:focus { outline: none; }
+
+/* A button that looks like a link, for the footer's "Send feedback". */
+.link-button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--primary);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.link-button:hover { color: var(--primary-hover); }
+
 /* Flask only: the developer discovery link. */
 .dev-note {
     display: flex;

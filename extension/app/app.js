@@ -15,7 +15,10 @@ import {
     matchesDateFilter, applyDateFilter, isDateFilterActive, isDateRangeBackwards,
 } from "./dateFilter.js";
 import { SORT_OPTIONS, DEFAULT_SORT, sortBooks } from "./librarySort.js";
-import { RELEASES, LATEST_RELEASE } from "./releases.js";
+import { RELEASES, LATEST_RELEASE, COMING_NEXT } from "./releases.js";
+import {
+    FEEDBACK_URL, FEEDBACK_TYPES, validateFeedback, buildPayload, sendFeedback, failureMessage,
+} from "./feedback.js";
 
 
 // ---------------------------------------------------------------------------
@@ -52,6 +55,7 @@ const VIEW_TO_STEP = {
     export:       3,
     guide:        null,
     "whats-new":  null,
+    feedback:     null,
     error:        null,
 };
 
@@ -846,7 +850,13 @@ const RELEASE_ICONS = {
     send:     '<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>',
     star:     `<polygon points="${STAR_POINTS}"/>`,
     check:    ICON_PATHS.check,
+    message:  '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
 };
+
+// Leave out items that point at the feedback form while it's switched off.
+function visibleItems(items) {
+    return items.filter((item) => item.requires !== "feedback" || FEEDBACK_URL);
+}
 const USERS_ICON =
     '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>' +
     '<path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>';
@@ -881,7 +891,12 @@ function renderWelcomeUpdates() {
     document.getElementById("whats-new-month").textContent =
         releaseMonth(LATEST_RELEASE.date);
     document.getElementById("whats-new-cards").innerHTML =
-        updateCards(LATEST_RELEASE.items.slice(0, 3));
+        updateCards(visibleItems(LATEST_RELEASE.items).slice(0, 3));
+}
+
+// The roadmap at the bottom of the What's new page.
+function renderComingNext() {
+    document.getElementById("coming-next").innerHTML = updateCards(COMING_NEXT);
 }
 
 // The What's new page lists every release, newest first.
@@ -893,7 +908,7 @@ function renderReleaseList() {
                 <span class="small text-muted">${releaseMonth(release.date)}</span>
             </div>
             <h2 class="h3">${escapeHTML(release.title)}</h2>
-            <ul class="update-cards">${updateCards(release.items)}</ul>
+            <ul class="update-cards">${updateCards(visibleItems(release.items))}</ul>
         </article>
     `).join("");
 }
@@ -916,6 +931,133 @@ function markReleaseSeen() {
 
 
 // ---------------------------------------------------------------------------
+// Feedback form. Rules in feedback.js; the sheet side is tools/feedback-sheet.gs.
+// ---------------------------------------------------------------------------
+
+const FEEDBACK_FIELDS = ["type", "title", "details", "email"];
+
+// Show every way into the form, but only once it has somewhere to send to.
+// Until FEEDBACK_URL is set, they all stay hidden.
+function wireFeedback() {
+    if (!FEEDBACK_URL) return;
+    document.querySelectorAll(".needs-feedback").forEach((el) => { el.hidden = false; });
+
+    document.getElementById("fb-type-options").innerHTML = FEEDBACK_TYPES.map((t) => `
+        <label class="choice">
+            <input type="radio" name="fb-type" value="${t.id}">
+            <span>${escapeHTML(t.label)}</span>
+        </label>
+    `).join("");
+
+    // Any element with data-open-feedback opens the form, with that type
+    // already picked (for example "Report a bug" picks "Something's not working").
+    document.addEventListener("click", (event) => {
+        const opener = event.target.closest("[data-open-feedback]");
+        if (!opener) return;
+        event.preventDefault();
+        openFeedback(opener.dataset.openFeedback);
+    });
+
+    const form = document.getElementById("feedback-form");
+    form.addEventListener("submit", submitFeedback);
+    // Clear a field's error as soon as it's being fixed, rather than leaving
+    // the old message up until the next Send.
+    form.addEventListener("input", (event) => {
+        const field = event.target.name === "fb-type"
+            ? "type"
+            : event.target.id.replace(/^fb-/, "");
+        if (FEEDBACK_FIELDS.includes(field)) showFieldError(field, "");
+    });
+    document.getElementById("fb-another").addEventListener("click", () => {
+        resetFeedbackForm();
+        document.getElementById("fb-title").focus();
+    });
+}
+
+function openFeedback(type) {
+    // Start fresh after a message was sent; otherwise keep any half-written
+    // draft, so wandering off to check something doesn't lose it.
+    if (!document.getElementById("feedback-done").hidden) resetFeedbackForm();
+    const radio = document.querySelector(`input[name="fb-type"][value="${type}"]`);
+    if (radio && !document.querySelector('input[name="fb-type"]:checked')) radio.checked = true;
+    showView("feedback");
+    document.getElementById("fb-title").focus();
+}
+
+function resetFeedbackForm() {
+    document.getElementById("feedback-form").reset();
+    FEEDBACK_FIELDS.forEach((field) => showFieldError(field, ""));
+    document.getElementById("fb-send-error").hidden = true;
+    document.getElementById("feedback-form").hidden = false;
+    document.getElementById("feedback-done").hidden = true;
+}
+
+function showFieldError(field, message) {
+    const el = document.getElementById(`fb-${field}-error`);
+    el.textContent = message;
+    el.hidden = !message;
+    const input = field === "type"
+        ? document.getElementById("fb-type-options")
+        : document.getElementById(`fb-${field}`);
+    if (message) input.setAttribute("aria-invalid", "true");
+    else input.removeAttribute("aria-invalid");
+}
+
+async function submitFeedback(event) {
+    event.preventDefault();
+    const checked = document.querySelector('input[name="fb-type"]:checked');
+    const { value, errors } = validateFeedback({
+        type:    checked ? checked.value : "",
+        title:   document.getElementById("fb-title").value,
+        details: document.getElementById("fb-details").value,
+        email:   document.getElementById("fb-email").value,
+    });
+
+    FEEDBACK_FIELDS.forEach((field) => showFieldError(field, errors[field] || ""));
+    const firstBad = FEEDBACK_FIELDS.find((field) => errors[field]);
+    if (firstBad) {
+        const target = firstBad === "type"
+            ? document.querySelector('input[name="fb-type"]')
+            : document.getElementById(`fb-${firstBad}`);
+        target.focus();
+        return;
+    }
+
+    const sendError = document.getElementById("fb-send-error");
+    sendError.hidden = true;
+    const button = document.getElementById("fb-send");
+    button.style.minWidth = `${button.offsetWidth}px`;
+    button.disabled = true;
+    button.innerHTML = `<svg class="icon spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Sending…`;
+
+    const trap = document.getElementById("fb-website").value;
+    const payload = buildPayload(value, chrome.runtime.getManifest().version, trap);
+    // A bot filled the hidden field: act as if it worked and send nothing.
+    const result = trap
+        ? { ok: true, reference: "" }
+        : await sendFeedback(FEEDBACK_URL, payload);
+
+    button.disabled = false;
+    button.textContent = "Send";
+    button.style.minWidth = "";
+
+    if (!result.ok) {
+        sendError.textContent = failureMessage(result.reason);
+        sendError.hidden = false;
+        return;
+    }
+
+    document.getElementById("feedback-done-text").textContent = result.reference
+        ? `Your reference is ${result.reference}. ${value.email ? "We'll reply to the email you gave." : ""}`.trim()
+        : "We'll take a look.";
+    document.getElementById("feedback-form").hidden = true;
+    const done = document.getElementById("feedback-done");
+    done.hidden = false;
+    done.focus();
+}
+
+
+// ---------------------------------------------------------------------------
 // Ko-fi links.
 // ---------------------------------------------------------------------------
 
@@ -929,8 +1071,8 @@ function wireKofiLinks() {
     document.getElementById("kofi-about-link").href = KOFI_URL;
     document.getElementById("kofi-about").hidden = false;
 
-    // The welcome page's "Free" tile, where it sits next to "free and
-    // open source" rather than asking before the tool has done anything.
+    // The welcome page's "Free" tile, where it sits next to "free, no
+    // sign-up" rather than asking before the tool has done anything.
     const welcome = document.getElementById("kofi-welcome-link");
     welcome.href = KOFI_URL;
     welcome.hidden = false;
@@ -992,6 +1134,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         const previous = viewHistory.pop() || "intro";
         showView(previous, { pushHistory: false });
     });
+    document.getElementById("back-from-feedback").addEventListener("click", (e) => {
+        e.preventDefault();
+        const previous = viewHistory.pop() || "intro";
+        showView(previous, { pushHistory: false });
+    });
 
     wireLibraryEvents();
     wireFilterEvents();
@@ -999,6 +1146,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     wireSortEvents();
     renderWelcomeUpdates();
     renderReleaseList();
+    renderComingNext();
+    wireFeedback();
     await showNewDotIfUnseen();
     wireKofiLinks();
     showVersion();

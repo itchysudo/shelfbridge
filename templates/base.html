@@ -53,9 +53,7 @@
             <p>
                 {# Only the guide route passes `version`; app.py is out of
                    scope for the redesign, so other pages omit it. #}
-                {% if version %}v{{ version }} · {% endif %}
-                <a href="https://github.com/itchysudo/shelfbridge/blob/main/LICENSE" target="_blank" rel="noopener">MIT licence</a> ·
-                <a href="https://github.com/itchysudo/shelfbridge" target="_blank" rel="noopener">Source on GitHub</a>
+                {% if version %}v{{ version }}{% endif %}
             </p>
         </div>
     </footer>

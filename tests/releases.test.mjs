@@ -8,7 +8,8 @@
 // the newest entry has to match the version in the manifest.
 
 import { readFileSync } from "node:fs";
-import { RELEASES, LATEST_RELEASE } from "../extension/app/releases.js";
+import { RELEASES, LATEST_RELEASE, COMING_NEXT } from "../extension/app/releases.js";
+import { FEEDBACK_URL } from "../extension/app/feedback.js";
 
 let failures = 0;
 
@@ -37,7 +38,20 @@ check("every release has a version, a YYYY-MM date, a title and items",
 check("every item has an icon, a title and some text",
     RELEASES.every((r) => r.items.every((i) => i.icon && i.title && i.text)), true);
 check("no exclamation marks, per the brand rules",
-    JSON.stringify(RELEASES).includes("!"), false);
+    JSON.stringify([RELEASES, COMING_NEXT]).includes("!"), false);
+check("the welcome page's three items never depend on the feedback form",
+    LATEST_RELEASE.items.slice(0, 3).every((i) => !i.requires), true);
+check("every roadmap item has an icon, a title and some text",
+    COMING_NEXT.every((i) => i.icon && i.title && i.text), true);
+
+// Not a failure, because the form is switched on by deploying a script
+// outside this repo. But a release without it has no way for users to get
+// in touch, so say so loudly.
+if (!FEEDBACK_URL) {
+    console.log("\n  WARNING  FEEDBACK_URL in extension/app/feedback.js is empty, so the");
+    console.log("           feedback form and every link to it are hidden. Deploy");
+    console.log("           tools/feedback-sheet.gs and paste in its URL before releasing.");
+}
 
 
 console.log(failures ? `\n${failures} failed.` : "\nAll passed.");
