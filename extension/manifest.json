@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ShelfBridge",
-  "version": "2.2610.1",
+  "version": "2.2610.2",
   "description": "Get your reading library out of Fable and into Goodreads, StoryGraph or Pagebound. Everything runs in your own browser.",
 
   "icons": {

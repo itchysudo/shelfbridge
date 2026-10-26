@@ -8,7 +8,7 @@
 // the newest entry has to match the version in the manifest.
 
 import { readFileSync } from "node:fs";
-import { RELEASES, LATEST_RELEASE, COMING_NEXT } from "../extension/app/releases.js";
+import { RELEASES, LATEST_RELEASE, WELCOME_RELEASE, COMING_NEXT } from "../extension/app/releases.js";
 import { FEEDBACK_URL } from "../extension/app/feedback.js";
 
 let failures = 0;
@@ -31,8 +31,10 @@ console.log("\nRelease notes");
 
 check("the newest notes are for the version in the manifest",
     LATEST_RELEASE.version, manifest.version);
-check("the newest release has at least three items for the welcome page",
-    LATEST_RELEASE.items.length >= 3, true);
+check("the welcome page has a release with three items to show",
+    WELCOME_RELEASE.items.filter((i) => !i.requires).length >= 3, true);
+check("the welcome page shows the newest release whenever it has three items",
+    LATEST_RELEASE.items.filter((i) => !i.requires).length < 3 || WELCOME_RELEASE === LATEST_RELEASE, true);
 check("every release has a version, a YYYY-MM date, a title and items",
     RELEASES.every((r) => r.version && /^\d{4}-\d{2}$/.test(r.date) && r.title && r.items.length > 0), true);
 check("every item has an icon, a title and some text",
@@ -40,7 +42,7 @@ check("every item has an icon, a title and some text",
 check("no exclamation marks, per the brand rules",
     JSON.stringify([RELEASES, COMING_NEXT]).includes("!"), false);
 check("the welcome page's three items never depend on the feedback form",
-    LATEST_RELEASE.items.slice(0, 3).every((i) => !i.requires), true);
+    WELCOME_RELEASE.items.slice(0, 3).every((i) => !i.requires), true);
 check("every roadmap item has an icon, a title and some text",
     COMING_NEXT.every((i) => i.icon && i.title && i.text), true);
 

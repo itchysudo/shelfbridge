@@ -12,7 +12,10 @@
 //   * Lead with what the user can now do, in their words, not ours.
 //   * Sentence case, UK spelling, no exclamation marks (the brand rules).
 //   * Put the first three items in the order you want them on the welcome
-//     page; only those three appear there.
+//     page; only those three appear there. A small point release with fewer
+//     than three is fine: the welcome page keeps showing the latest release
+//     that has three (WELCOME_RELEASE, below), and the What's new page lists
+//     every release.
 //   * `source` credits where an idea came from, for example "Requested on
 //     Reddit". Never name the person without their say-so.
 //   * `icon` is a key of RELEASE_ICONS in app.js.
@@ -21,6 +24,23 @@
 //     that isn't there.
 
 export const RELEASES = [
+    {
+        version: "2.2610.2",
+        date: "2026-10",
+        title: "Clearer answers about what comes across",
+        items: [
+            {
+                icon: "calendar",
+                title: "Why start dates stay behind",
+                text: "ShelfBridge now explains why start dates can't come across: it's down to how Goodreads, StoryGraph and Pagebound import files, not something we can switch on.",
+            },
+            {
+                icon: "sparkles",
+                title: "A help guide that's up to date",
+                text: "The guide now covers written reviews, quarter-star ratings and what each app does with them.",
+            },
+        ],
+    },
     {
         version: "2.2610.1",
         date: "2026-10",
@@ -88,6 +108,12 @@ export const RELEASES = [
 
 // The newest release, which the welcome page shows.
 export const LATEST_RELEASE = RELEASES[0];
+
+// The release the welcome page shows: the newest one with three items that
+// don't depend on the feedback form, so a small point release doesn't leave
+// the page with one or two cards.
+export const WELCOME_RELEASE =
+    RELEASES.find((r) => r.items.filter((i) => !i.requires).length >= 3) || LATEST_RELEASE;
 
 // The roadmap: what's planned next, shown at the bottom of the What's new
 // page. Only promise what's genuinely planned, and move an item into RELEASES

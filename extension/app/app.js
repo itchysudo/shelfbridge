@@ -15,7 +15,7 @@ import {
     matchesDateFilter, applyDateFilter, isDateFilterActive, isDateRangeBackwards,
 } from "./dateFilter.js";
 import { SORT_OPTIONS, DEFAULT_SORT, sortBooks } from "./librarySort.js";
-import { RELEASES, LATEST_RELEASE, COMING_NEXT } from "./releases.js";
+import { RELEASES, LATEST_RELEASE, WELCOME_RELEASE, COMING_NEXT } from "./releases.js";
 import {
     FEEDBACK_URL, FEEDBACK_TYPES, validateFeedback, buildPayload, sendFeedback, failureMessage,
 } from "./feedback.js";
@@ -74,8 +74,11 @@ function showView(name, { pushHistory = true } = {}) {
     // Per-view setup hooks.
     if (name === "library") renderLibrary();
     if (name === "export")  renderExport();
-    // Both of these show the latest release notes, so either counts as seen.
-    if (name === "intro" || name === "whats-new") markReleaseSeen();
+    // Seeing the latest notes clears the dot. The What's new page always shows
+    // them; the welcome page only does when it isn't showing an earlier
+    // release in place of a small point release.
+    const welcomeShowsLatest = WELCOME_RELEASE === LATEST_RELEASE;
+    if (name === "whats-new" || (name === "intro" && welcomeShowsLatest)) markReleaseSeen();
 }
 
 function currentView() {
@@ -1034,14 +1037,15 @@ function updateCards(items) {
     `).join("");
 }
 
-// The welcome page shows the newest release's first three changes.
+// The welcome page shows the first three changes of WELCOME_RELEASE: the
+// newest release, unless that's a small point release (see releases.js).
 function renderWelcomeUpdates() {
     document.getElementById("whats-new-badge").textContent =
-        `New in ${LATEST_RELEASE.version}`;
+        `New in ${WELCOME_RELEASE.version}`;
     document.getElementById("whats-new-month").textContent =
-        releaseMonth(LATEST_RELEASE.date);
+        releaseMonth(WELCOME_RELEASE.date);
     document.getElementById("whats-new-cards").innerHTML =
-        updateCards(visibleItems(LATEST_RELEASE.items).slice(0, 3));
+        updateCards(visibleItems(WELCOME_RELEASE.items).slice(0, 3));
 }
 
 // The roadmap at the bottom of the What's new page.
