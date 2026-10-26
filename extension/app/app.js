@@ -15,6 +15,7 @@ import {
     matchesDateFilter, applyDateFilter, isDateFilterActive, isDateRangeBackwards,
 } from "./dateFilter.js";
 import { SORT_OPTIONS, DEFAULT_SORT, sortBooks } from "./librarySort.js";
+import { RELEASES, LATEST_RELEASE } from "./releases.js";
 
 
 // ---------------------------------------------------------------------------
@@ -50,6 +51,7 @@ const VIEW_TO_STEP = {
     library:      2,
     export:       3,
     guide:        null,
+    "whats-new":  null,
     error:        null,
 };
 
@@ -68,6 +70,8 @@ function showView(name, { pushHistory = true } = {}) {
     // Per-view setup hooks.
     if (name === "library") renderLibrary();
     if (name === "export")  renderExport();
+    // Both of these show the latest release notes, so either counts as seen.
+    if (name === "intro" || name === "whats-new") markReleaseSeen();
 }
 
 function currentView() {
@@ -831,6 +835,87 @@ function showVersion() {
 
 
 // ---------------------------------------------------------------------------
+// What's new: release notes from releases.js.
+// ---------------------------------------------------------------------------
+
+// Icons the release notes can use, by the key given in releases.js.
+const RELEASE_ICONS = {
+    sparkles: '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>',
+    calendar: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+    sort:     '<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>',
+    send:     '<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>',
+    star:     `<polygon points="${STAR_POINTS}"/>`,
+    check:    ICON_PATHS.check,
+};
+const USERS_ICON =
+    '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>' +
+    '<path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>';
+
+// "2026-10" to "October 2026".
+function releaseMonth(yyyyMm) {
+    const [year, month] = yyyyMm.split("-").map(Number);
+    return new Date(Date.UTC(year, month - 1, 1)).toLocaleDateString("en-GB", {
+        month: "long", year: "numeric", timeZone: "UTC",
+    });
+}
+
+// One card per change. Release notes are our own copy, but they're still
+// escaped, so a stray "<" in a note can't break the page.
+function updateCards(items) {
+    return items.map((item) => `
+        <li class="update-card">
+            <span class="square-icon">${icon(RELEASE_ICONS[item.icon] || RELEASE_ICONS.sparkles)}</span>
+            <h3 class="h4">${escapeHTML(item.title)}</h3>
+            <p class="small text-muted">${escapeHTML(item.text)}</p>
+            ${item.source
+                ? `<span class="badge badge-community">${icon(USERS_ICON)}${escapeHTML(item.source)}</span>`
+                : ""}
+        </li>
+    `).join("");
+}
+
+// The welcome page shows the newest release's first three changes.
+function renderWelcomeUpdates() {
+    document.getElementById("whats-new-badge").textContent =
+        `New in ${LATEST_RELEASE.version}`;
+    document.getElementById("whats-new-month").textContent =
+        releaseMonth(LATEST_RELEASE.date);
+    document.getElementById("whats-new-cards").innerHTML =
+        updateCards(LATEST_RELEASE.items.slice(0, 3));
+}
+
+// The What's new page lists every release, newest first.
+function renderReleaseList() {
+    document.getElementById("release-list").innerHTML = RELEASES.map((release, i) => `
+        <article class="release${i === 0 ? " is-latest" : ""}">
+            <div class="release-meta">
+                <span class="badge ${i === 0 ? "badge-new" : "badge-neutral"}">Version ${escapeHTML(release.version)}</span>
+                <span class="small text-muted">${releaseMonth(release.date)}</span>
+            </div>
+            <h2 class="h3">${escapeHTML(release.title)}</h2>
+            <ul class="update-cards">${updateCards(release.items)}</ul>
+        </article>
+    `).join("");
+}
+
+// The "new" dot on the What's new link. It shows until someone has seen the
+// current release's notes, on the welcome page or the What's new page. Stored
+// locally in the browser next to the books; nothing leaves the machine.
+const SEEN_RELEASE_KEY = "lastSeenRelease";
+
+async function showNewDotIfUnseen() {
+    const stored = await chrome.storage.local.get(SEEN_RELEASE_KEY);
+    document.getElementById("whats-new-dot").hidden =
+        stored[SEEN_RELEASE_KEY] === LATEST_RELEASE.version;
+}
+
+function markReleaseSeen() {
+    document.getElementById("whats-new-dot").hidden = true;
+    chrome.storage.local.set({ [SEEN_RELEASE_KEY]: LATEST_RELEASE.version });
+}
+
+
+// ---------------------------------------------------------------------------
 // Ko-fi links.
 // ---------------------------------------------------------------------------
 
@@ -888,11 +973,27 @@ document.addEventListener("DOMContentLoaded", async () => {
         const previous = viewHistory.pop() || "intro";
         showView(previous, { pushHistory: false });
     });
+    document.getElementById("whats-new-link").addEventListener("click", (e) => {
+        e.preventDefault();
+        showView("whats-new");
+    });
+    document.getElementById("whats-new-more").addEventListener("click", (e) => {
+        e.preventDefault();
+        showView("whats-new");
+    });
+    document.getElementById("back-from-whats-new").addEventListener("click", (e) => {
+        e.preventDefault();
+        const previous = viewHistory.pop() || "intro";
+        showView(previous, { pushHistory: false });
+    });
 
     wireLibraryEvents();
     wireFilterEvents();
     wireDateFilterEvents();
     wireSortEvents();
+    renderWelcomeUpdates();
+    renderReleaseList();
+    await showNewDotIfUnseen();
     wireKofiLinks();
     showVersion();
 

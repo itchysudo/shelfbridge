@@ -2,6 +2,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tests/targets.test.mjs && node tests/dateFilter.test.mjs && node tests/librarySort.test.mjs"
+    "test": "node tests/targets.test.mjs && node tests/dateFilter.test.mjs && node tests/librarySort.test.mjs && node tests/releases.test.mjs"
   }
 }

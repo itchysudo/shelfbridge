@@ -10,7 +10,14 @@
     <header class="top-nav">
         <div class="top-nav-inner">
             <span class="logo">ShelfBridge<span class="logo-dot" aria-hidden="true"></span></span>
-            <nav aria-label="Main">
+            <nav aria-label="Main" class="nav-links">
+                <!-- The dot shows until the user has seen the latest
+                     release notes (see markReleaseSeen in app.js). -->
+                <a href="#" class="nav-link" id="whats-new-link">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>
+                    <span class="nav-label">What's new</span>
+                    <span class="new-dot" id="whats-new-dot" hidden><span class="visually-hidden">(new update)</span></span>
+                </a>
                 <a href="#" class="nav-link" id="help-link">
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
                     <span class="nav-label">Help and guide</span>
@@ -96,6 +103,31 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Latest release highlights. Filled from releases.js, so a
+                 release only means editing that one file. -->
+            <section class="whats-new-band" aria-labelledby="whats-new-heading">
+                <div class="whats-new-head">
+                    <span class="badge badge-new" id="whats-new-badge"></span>
+                    <h2 id="whats-new-heading">What's new in ShelfBridge</h2>
+                    <p class="lead">
+                        We keep making ShelfBridge better, and a lot of it starts
+                        with ideas from people who use it. Here's what landed in
+                        <span id="whats-new-month"></span>.
+                    </p>
+                </div>
+                <ul class="update-cards" id="whats-new-cards"></ul>
+                <div class="actions">
+                    <a href="#" id="whats-new-more" class="btn btn-primary">
+                        See everything that's new
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                    </a>
+                    <a href="https://github.com/itchysudo/shelfbridge/issues/new" target="_blank" rel="noopener" class="btn btn-link">
+                        Got an idea? Tell us on GitHub
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3"/></svg>
+                    </a>
+                </div>
+            </section>
 
             <section class="section" aria-labelledby="next-heading">
                 <h2 id="next-heading">What happens next</h2>
@@ -580,6 +612,52 @@
 
             <div class="actions">
                 <a href="#" id="back-from-guide" class="btn btn-link">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                    Back
+                </a>
+            </div>
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- View: WHAT'S NEW (every release, newest first, plus roadmap)    -->
+        <!-- ============================================================== -->
+        <section class="view page" data-view="whats-new" hidden>
+            <div class="page-header">
+                <h1>What's new</h1>
+                <p class="lead">
+                    Every update to ShelfBridge, newest first. Some of the best
+                    ones started as a suggestion from someone using it.
+                </p>
+            </div>
+
+            <!-- Built from releases.js. -->
+            <div class="release-list" id="release-list"></div>
+
+            <!-- The roadmap lives on GitHub so it can change between
+                 releases. A link, not a fetch: the app itself still talks
+                 to nothing but Fable. -->
+            <section class="card roadmap-card" aria-labelledby="roadmap-heading">
+                <span class="square-icon">
+                    <svg class="icon icon-24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/><path d="M15 5.764v15"/><path d="M9 3.236v15"/></svg>
+                </span>
+                <div class="roadmap-body">
+                    <h2 class="h4" id="roadmap-heading">What's coming next</h2>
+                    <p class="text-muted">See what's planned, and help decide what gets built after that.</p>
+                </div>
+                <div class="actions">
+                    <a href="https://github.com/itchysudo/shelfbridge/blob/main/ROADMAP.md" target="_blank" rel="noopener" class="btn btn-primary">
+                        See the roadmap
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3"/></svg>
+                    </a>
+                    <a href="https://github.com/itchysudo/shelfbridge/issues/new" target="_blank" rel="noopener" class="btn btn-link">
+                        Suggest an idea
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3"/></svg>
+                    </a>
+                </div>
+            </section>
+
+            <div class="actions">
+                <a href="#" id="back-from-whats-new" class="btn btn-link">
                     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
                     Back
                 </a>
