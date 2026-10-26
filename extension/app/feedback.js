@@ -17,7 +17,7 @@
 // FEEDBACK_URL. While it's empty, every link to the form stays hidden, so a
 // build with no endpoint can't ship a form that goes nowhere.
 
-export const FEEDBACK_URL = "";
+export const FEEDBACK_URL = "https://script.google.com/macros/s/AKfycbz7RYHSW_sKcQZUHoFP_YCSUz66kvpNRtsxPwTgW2R0lDmFWEFvG4wT_rbWHgYi7bIu/exec";
 
 // Longest allowed value for each field. The Apps Script checks the same
 // limits, because anyone could post to it directly.

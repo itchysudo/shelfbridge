@@ -50,13 +50,13 @@ const CONFIG = {
   // Row 1 header for each field. Change these to match your sheet.
   columns: {
     id:          "ID",
-    date:        "Date",
+    date:        "Date added",
     project:     "Project",
     title:       "Title",
     description: "Description",
     type:        "Type",
     source:      "Source",
-    reporter:    "Reporter",   // gets the email address, if one was given
+    reporter:    "Requested by",   // gets the email address, if one was given
     status:      "Status",
   },
 
@@ -119,12 +119,13 @@ function doPost(e) {
         status:      CONFIG.status,
       };
 
-      const row = headers.map(() => "");
+      // Only the mapped cells are written, so formula columns (like a key
+      // filled down the whole tab) keep their formulas.
+      const target = firstEmptyRow(sheet, headers);
       Object.keys(fields).forEach((field) => {
         const column = headers.indexOf(CONFIG.columns[field]);
-        if (column !== -1) row[column] = asText(fields[field]);
+        if (column !== -1) sheet.getRange(target, column + 1).setValue(asText(fields[field]));
       });
-      sheet.appendRow(row);
 
       return reply({ ok: true, reference: reference });
     } finally {
@@ -147,6 +148,19 @@ function nextId(sheet, headers) {
     });
   }
   return CONFIG.idPrefix + String(highest + 1).padStart(CONFIG.idDigits, "0");
+}
+
+// The first row with nothing in the ID column. Not appendRow(): formulas filled
+// down a column count as content, so it would add the row below all of them.
+function firstEmptyRow(sheet, headers) {
+  const column = headers.indexOf(CONFIG.columns.id) + 1;
+  const last = sheet.getLastRow();
+  if (column > 0 && last > 1) {
+    const ids = sheet.getRange(2, column, last - 1, 1).getValues();
+    const index = ids.findIndex(([value]) => String(value).trim() === "");
+    if (index !== -1) return index + 2;
+  }
+  return last + 1;
 }
 
 // Counts this hour's messages and says whether there's room for another.
