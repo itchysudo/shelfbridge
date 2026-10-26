@@ -110,7 +110,7 @@ Everything in this table was checked by actually importing into a real account, 
 | Written reviews, if you tick the box | yes | beta | beta |
 | Every book | yes | yes | only ones it already has, and only with an ISBN |
 
-**Start dates don't come across anywhere.** All three apps can store one, but none of the file formats they'll accept has a column to carry it, so the field is left blank and you'd have to fill it in yourself. Finish dates are fine everywhere.
+**Start dates don't come across anywhere, and that's down to the destinations, not ShelfBridge.** All three apps can store one, but none will take it from an imported file. Goodreads' import file has no start date column, and it overwrites the Date Added we fill with the day you import. StoryGraph only imports Goodreads-style files, so it has nowhere to put one either. The Pagebound file does carry start dates, in Dates Read, but Pagebound hasn't filled in its Started date from them so far. None of the three offers another way in (Goodreads closed its developer API in 2020), so the field is left blank and you'd have to fill it in yourself. The app explains this in its help guide, linked from the library page and each destination's notes. Finish dates are fine everywhere.
 
 **Half stars only survive on Pagebound.** Goodreads can't store them at all. StoryGraph can, but its Goodreads importer rounds them on the way in, so a 3.5 lands as a 4. Fable also rates in quarter stars, and nowhere keeps those: Pagebound rounds a 4.25 to a 4.
 

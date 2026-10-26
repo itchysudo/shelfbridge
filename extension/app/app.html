@@ -217,8 +217,13 @@
             <div class="alert alert-info" role="note">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
                 <div class="alert-body">
-                    <p class="alert-title">Start dates are left blank when you export</p>
-                    <p class="alert-detail">We show your Fable start dates here so you've got them, but none of the files Goodreads, StoryGraph or Pagebound import has a column for one. Finish dates come across fine.</p>
+                    <p class="alert-title">Start dates don't come across</p>
+                    <p class="alert-detail">
+                        That's a limit of the apps you're importing into, not of ShelfBridge: none of them
+                        takes a start date from an imported file. Your start dates stay here so you can add
+                        them by hand afterwards. Finish dates come across fine.
+                        <a href="#" data-open-guide="why-start-dates">Why this happens</a>
+                    </p>
                 </div>
             </div>
 
@@ -589,10 +594,32 @@
                     <h3>Dates and ratings</h3>
                     <ul>
                         <li><strong>Finish dates come across everywhere.</strong></li>
-                        <li><strong>Start dates are left blank everywhere.</strong> None of the files these apps import has a column for one, so you'd add them by hand afterwards.</li>
-                        <li><strong>Half stars only survive on Pagebound.</strong> Goodreads can't store them, and StoryGraph rounds them on the way in.</li>
-                        <li><strong>Reviews don't come across</strong> anywhere.</li>
+                        <li><strong>Start dates are left blank everywhere.</strong> That's down to the other apps, not ShelfBridge. See below.</li>
+                        <li><strong>Half stars only survive on Pagebound.</strong> Goodreads can't store them, and StoryGraph rounds them on the way in. Fable also rates in quarter stars, and nowhere keeps those exactly.</li>
+                        <li><strong>Written reviews come across if you tick the box</strong> on the export page. They're confirmed on Goodreads and in beta for StoryGraph and Pagebound. On Goodreads, a review is public.</li>
                     </ul>
+
+                    <h3 id="why-start-dates" tabindex="-1">Why start dates don't come across</h3>
+                    <p>
+                        This is a limit of the apps you're importing into,
+                        not something ShelfBridge is missing. We read your
+                        start dates from Fable and put them in the file
+                        wherever its format has room. What happens next is
+                        up to each app's importer.
+                    </p>
+                    <ul>
+                        <li><strong>Goodreads:</strong> its import file has no start date column. We put your start date in the nearest one, Date Added, but Goodreads replaces it with the day you import.</li>
+                        <li><strong>StoryGraph:</strong> it only imports Goodreads-style files, which have no start date column either. It keeps the Date Added we send, but never shows it.</li>
+                        <li><strong>Pagebound:</strong> the file does carry your start dates, but so far Pagebound hasn't filled in its Started date from them.</li>
+                    </ul>
+                    <p>
+                        There's no other way in. Goodreads closed its
+                        developer access in 2020, and the others don't offer
+                        a way for a tool like ShelfBridge to add dates for
+                        you. So the only option is adding them by hand after
+                        you import. Your Fable start dates stay on the
+                        library page, so you can look each one up as you go.
+                    </p>
 
                     <h3>Can I send my library to more than one place?</h3>
                     <p>
@@ -605,8 +632,9 @@
                     <p>
                         Everything runs in your own browser. Your books are
                         stored in this browser's extension storage and never
-                        sent to us. ShelfBridge reads your shelves from Fable's
-                        own API (<code>api.fable.co</code>).
+                        sent to us. ShelfBridge reads your shelves, ratings
+                        and reviews from Fable's own API
+                        (<code>api.fable.co</code>).
                     </p>
                     <p>
                         The only other thing ShelfBridge ever sends is feedback,

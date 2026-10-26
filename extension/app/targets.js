@@ -386,6 +386,11 @@ const STORYGRAPH_FORMAT = {
 // DESTINATIONS
 // ===========================================================================
 
+// Ends each destination's start date note. Opens the guide's explanation,
+// so people can see it's the destination's importer, not ShelfBridge.
+const WHY_START_DATES =
+    ` <a href="#" data-open-guide="why-start-dates">Why we can't fix this</a>`;
+
 const goodreads = {
     id: "goodreads",
     label: "Goodreads",
@@ -427,7 +432,8 @@ const goodreads = {
         "<strong>Date Read</strong> comes from your Fable <em>finish</em> date.",
         "<strong>Start dates don't come across.</strong> We put your Fable " +
         "start date in Date Added, but Goodreads throws that value away on " +
-        "import and stamps its own. Nothing we can do from this end.",
+        "import and stamps its own. Nothing we can do from this end." +
+        WHY_START_DATES,
         "<strong>Half-star ratings get rounded</strong> because Goodreads only " +
         "does whole stars.",
     ],
@@ -485,7 +491,7 @@ const storygraph = {
         "<strong>Start dates don't come across.</strong> StoryGraph does track " +
         "one, under a book's journal entries, and it will create a \"Started " +
         "reading\" entry for you. It just won't have a date on it, because no " +
-        "Goodreads-style file has a column to carry one.",
+        "Goodreads-style file has a column to carry one." + WHY_START_DATES,
         "<strong>Half stars get rounded to whole ones.</strong> StoryGraph " +
         "stores quarter stars, but its Goodreads importer rounds on the way in, " +
         "so a 3.5 arrives as a 4. That's their importer rather than anything we " +
@@ -555,9 +561,10 @@ const pagebound = {
         "<strong>Last Date Read</strong> is your Fable finish date, and it comes " +
         "across correctly.",
         "<strong>Start dates don't come across.</strong> Pagebound does have a " +
-        "Started date on each book, which you'll find by clicking the dates, but " +
-        "nothing in this file fills it in, so it stays blank. Anything you're " +
-        "part-way through gets stamped with the date you imported instead.",
+        "Started date on each book, which you'll find by clicking the dates. The " +
+        "file carries your start dates, but so far Pagebound hasn't filled that " +
+        "date in from them, so it stays blank. Anything you're part-way through " +
+        "gets stamped with the date you imported instead." + WHY_START_DATES,
         "Books on your To-Read shelf land on your Pagebound TBR list.",
         "<strong>You may not get everything.</strong> Pagebound only brings " +
         "across books that already exist in its own library, so anything it " +

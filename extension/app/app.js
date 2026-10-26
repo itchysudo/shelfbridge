@@ -1269,6 +1269,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         e.preventDefault();
         showView("guide");
     });
+    // Links that open the guide at a particular section, such as the library
+    // page's "Why this happens" for start dates.
+    document.addEventListener("click", (e) => {
+        const link = e.target.closest("[data-open-guide]");
+        if (!link) return;
+        e.preventDefault();
+        showView("guide");
+        const section = document.getElementById(link.dataset.openGuide);
+        if (section) {
+            section.scrollIntoView({ block: "start" });
+            section.focus({ preventScroll: true });
+        }
+    });
     document.getElementById("back-from-guide").addEventListener("click", (e) => {
         e.preventDefault();
         const previous = viewHistory.pop() || "intro";
