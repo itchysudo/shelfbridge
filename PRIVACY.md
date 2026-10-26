@@ -63,7 +63,7 @@ The feedback form doesn't need a permission of its own. Your Fable password is n
 ## You're in control
 
 - **See what's stored:** open ShelfBridge and the library page shows you exactly what's there.
-- **Delete a book:** select **Remove** at the end of its row.
+- **Delete a book:** select **Remove** at the end of its row, or tick several and select **Remove selected**.
 - **Wipe everything:** remove the extension from `chrome://extensions`, or clear extension data from `chrome://settings/cookies`.
 - **Don't send feedback:** the form is entirely optional, and nothing is sent until you press Send.
 - **Stop using it:** disable or uninstall the extension. Your library isn't sitting on any server somewhere, because I don't run one.

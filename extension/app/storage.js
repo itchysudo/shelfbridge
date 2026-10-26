@@ -41,6 +41,17 @@ export async function deleteBook(bookId) {
     return true;
 }
 
+// Delete several books by id in one write, so removing fifty books doesn't
+// mean fifty reads and saves. Returns how many were removed.
+export async function deleteBooks(bookIds) {
+    const doomed = new Set(bookIds);
+    const books = await getBooks();
+    const next = books.filter((b) => !doomed.has(b.id));
+    const removed = books.length - next.length;
+    if (removed > 0) await setBooks(next);
+    return removed;
+}
+
 // Generate a stable id for a freshly-scraped book. We use Fable's UUID
 // because it's already unique and lets us recognise the same book across
 // re-scrapes if we ever want to merge.

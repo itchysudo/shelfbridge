@@ -9,7 +9,7 @@ import {
     TARGETS, DEFAULT_TARGET_ID, getTarget, partitionBooks, hasUsableIsbn,
 } from "./targets.js";
 import {
-    getBooks, setBooks, updateBook, deleteBook,
+    getBooks, setBooks, updateBook, deleteBook, deleteBooks,
 } from "./storage.js";
 import {
     matchesDateFilter, applyDateFilter, isDateFilterActive, isDateRangeBackwards,
@@ -177,6 +177,7 @@ async function renderLibrary() {
         document.getElementById("library-no-match").hidden = true;
         tbody.innerHTML = "";
         updateSummary();
+        updateSelection();
         document.getElementById("summary").textContent = "No books yet.";
         return;
     }
@@ -203,6 +204,7 @@ function renderBookRow(book) {
 
     return `
         <tr data-book-id="${escapeAttr(book.id)}" data-shelf="${escapeAttr(book.shelf || "")}">
+            <td class="select-cell"><input type="checkbox" class="row-check row-select" aria-label="Select ${escapeAttr(title)}"></td>
             <td class="cover-cell">${cover}</td>
             <td class="cell-title"><input type="text" class="cell-input" data-field="title" aria-label="Title" value="${escapeAttr(title)}"></td>
             <td class="cell-author"><input type="text" class="cell-input" data-field="author" aria-label="Author" value="${escapeAttr(book.author || "")}"></td>
@@ -372,6 +374,11 @@ function wireLibraryEvents() {
         if (!updated) return;
         libraryBooks.set(bookId, updated);
 
+        // Keep the row's checkbox and Remove button naming the right book.
+        if (field === "title") {
+            row.querySelector(".row-select").setAttribute("aria-label", `Select ${updated.title}`);
+            row.querySelector(".delete-btn").setAttribute("aria-label", `Remove ${updated.title}`);
+        }
         if (field === "shelf") {
             row.dataset.shelf = updated.shelf;
             updateSummary();
@@ -426,9 +433,112 @@ function wireLibraryEvents() {
         if (ok) {
             libraryBooks.delete(row.dataset.bookId);
             row.remove();
-            applyActiveFilter();
-            showSaved();
+            afterRowsRemoved();
         }
+    });
+}
+
+// After one or more rows go: refresh the counts, or show the "No books yet"
+// state once the last book has gone rather than an empty table.
+function afterRowsRemoved() {
+    if (libraryBooks.size === 0) renderLibrary();
+    else applyActiveFilter();
+    showSaved();
+}
+
+// ---------------------------------------------------------------------------
+// Selecting rows to remove several books at once.
+// ---------------------------------------------------------------------------
+// The ticks live on the rows' checkboxes; there's no separate list to keep in
+// step. Only rows on show can stay ticked (applyActiveFilter unticks any the
+// filters hide), so "Remove selected" never takes a book you can't see.
+
+function visibleRows() {
+    return Array.from(document.querySelectorAll("#book-tbody tr")).filter((r) => !r.hidden);
+}
+
+function selectedRows() {
+    return visibleRows().filter((r) => r.querySelector(".row-select").checked);
+}
+
+// The row a plain tick last landed on, for Shift-ticking a run of books.
+let lastTickedRow = null;
+
+function updateSelection() {
+    const visible = visibleRows();
+    const selected = selectedRows();
+    const n = selected.length;
+
+    document.querySelectorAll("#book-tbody tr").forEach((row) => {
+        row.classList.toggle("is-selected", row.querySelector(".row-select").checked);
+    });
+
+    const all = document.getElementById("select-all");
+    all.checked = n > 0 && n === visible.length;
+    all.indeterminate = n > 0 && n < visible.length;
+    all.disabled = visible.length === 0;
+
+    document.getElementById("selection-bar").hidden = libraryBooks.size === 0;
+    document.getElementById("selection-count").textContent = n === 0
+        ? "Tick books to remove several at once."
+        : `${n} book${n === 1 ? "" : "s"} selected`;
+    document.getElementById("remove-selected").disabled = n === 0;
+    document.getElementById("clear-selection").hidden = n === 0;
+}
+
+function setTicked(rows, ticked) {
+    rows.forEach((row) => { row.querySelector(".row-select").checked = ticked; });
+}
+
+function wireSelectionEvents() {
+    const tbody = document.getElementById("book-tbody");
+
+    // `click` rather than `change`, because only the click says whether Shift
+    // was held. By the time it fires the box has already flipped.
+    tbody.addEventListener("click", (event) => {
+        const box = event.target.closest(".row-select");
+        if (!box) return;
+        const row = box.closest("tr");
+        const visible = visibleRows();
+        if (event.shiftKey && lastTickedRow && visible.includes(lastTickedRow)) {
+            const a = visible.indexOf(lastTickedRow);
+            const b = visible.indexOf(row);
+            setTicked(visible.slice(Math.min(a, b), Math.max(a, b) + 1), box.checked);
+        }
+        lastTickedRow = row;
+        updateSelection();
+    });
+
+    document.getElementById("select-all").addEventListener("change", (event) => {
+        setTicked(visibleRows(), event.target.checked);
+        lastTickedRow = null;
+        updateSelection();
+    });
+
+    document.getElementById("clear-selection").addEventListener("click", () => {
+        setTicked(visibleRows(), false);
+        lastTickedRow = null;
+        updateSelection();
+        document.getElementById("select-all").focus();
+    });
+
+    document.getElementById("remove-selected").addEventListener("click", async () => {
+        const rows = selectedRows();
+        if (rows.length === 0) return;
+        const question = rows.length === 1
+            ? `Remove "${rows[0].querySelector('[data-field="title"]').value}"? You can't undo this.`
+            : `Remove ${rows.length} books? You can't undo this.`;
+        if (!confirm(question)) return;
+
+        const ids = rows.map((r) => r.dataset.bookId);
+        const removed = await deleteBooks(ids);
+        if (!removed) return;
+        ids.forEach((id) => libraryBooks.delete(id));
+        rows.forEach((r) => r.remove());
+        lastTickedRow = null;
+        afterRowsRemoved();
+        // The button just went disabled, so put focus somewhere sensible.
+        if (libraryBooks.size > 0) document.getElementById("select-all").focus();
     });
 }
 
@@ -460,6 +570,7 @@ function applyActiveFilter() {
     rows.forEach((row) => {
         const shelfOk = (filter === "all" || row.dataset.shelf === filter);
         row.hidden = !(shelfOk && rowInDateRange(row));
+        if (row.hidden) row.querySelector(".row-select").checked = false;
     });
 
     // Books exist but none are showing: say so, rather than an empty table.
@@ -469,6 +580,7 @@ function applyActiveFilter() {
 
     updateDateFilterControls();
     updateSummary();
+    updateSelection();
 }
 
 function updateSummary() {
@@ -1141,6 +1253,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     wireLibraryEvents();
+    wireSelectionEvents();
     wireFilterEvents();
     wireDateFilterEvents();
     wireSortEvents();

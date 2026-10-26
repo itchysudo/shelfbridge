@@ -284,6 +284,20 @@
                     </p>
                 </fieldset>
 
+                <!-- Bulk remove. Always takes up the same space, so ticking
+                     the first box doesn't push the table down under the
+                     pointer. Only rows on show can be selected. -->
+                <div class="selection-bar" id="selection-bar">
+                    <p class="selection-count" id="selection-count" aria-live="polite"></p>
+                    <div class="selection-actions">
+                        <button type="button" id="clear-selection" class="btn btn-link" hidden>Clear selection</button>
+                        <button type="button" id="remove-selected" class="delete-btn" disabled>
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                            Remove selected
+                        </button>
+                    </div>
+                </div>
+
                 <div class="table-wrap">
                     <div id="library-empty" class="empty-state" hidden>
                         <span class="empty-icon">
@@ -297,6 +311,7 @@
                     <table class="book-table editable" id="book-table">
                         <thead>
                             <tr>
+                                <th scope="col" class="select-cell"><input type="checkbox" id="select-all" class="row-check" aria-label="Select all books shown"></th>
                                 <th scope="col" class="cover-cell"><span class="visually-hidden">Cover</span></th>
                                 <th scope="col">Title</th>
                                 <th scope="col">Author</th>
@@ -512,6 +527,7 @@
                         <li><strong>Sort the list:</strong> use <strong>Sort by</strong> to order it by title, author, finish date, start date or rating, either way round. Books with nothing to sort on, such as no rating, go to the bottom. Sorting only changes what you see, not the file.</li>
                         <li><strong>Export only part of your library:</strong> set a From date, a To date or both. Books outside them are left out of your export, which helps if you moved to Fable from somewhere else and only want what you've logged since. A book is placed by its finish date, or its start date if it isn't finished. Books with no dates at all are left out unless you tick <strong>Include books with no dates</strong>.</li>
                         <li><strong>Remove a book:</strong> select <strong>Remove</strong> at the end of its row.</li>
+                        <li><strong>Remove several at once:</strong> tick the box at the start of each row, or the box at the top to tick every book on show, then select <strong>Remove selected</strong>. Hold Shift as you tick to select a run of books.</li>
                     </ul>
 
                     <h3>What the "Month only" badge means</h3>

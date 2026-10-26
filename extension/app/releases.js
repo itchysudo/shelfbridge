@@ -33,6 +33,12 @@ export const RELEASES = [
                 source: "Requested on Reddit",
             },
             {
+                icon: "check",
+                title: "Remove lots of books at once",
+                text: "Tick the books you don't want, or tick them all, and remove them in one go.",
+                source: "Requested on Reddit",
+            },
+            {
                 icon: "sort",
                 title: "Sort your books your way",
                 text: "Order your library by title, author, finish date or rating before you export.",

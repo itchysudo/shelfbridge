@@ -1039,11 +1039,11 @@ textarea.text-input { resize: vertical; }
 
 .book-table .cover-cell { width: 56px; }
 .book-table .actions-cell { text-align: right; }
-.book-table .cell-title  { min-width: 160px; }
-.book-table .cell-author { min-width: 120px; }
+.book-table .cell-title  { min-width: 150px; }
+.book-table .cell-author { min-width: 112px; }
 .book-table .cell-isbn   { min-width: 132px; }
 
-/* The review table has nine columns, so its inner cells are a little
+/* The review table has ten columns, so its inner cells are a little
    tighter than the 8px default, keeping every column (Remove included) in
    view at a 1280px window. The outer edges keep their 16px. */
 .book-table.editable th:not(:first-child):not(:last-child),
@@ -1239,9 +1239,62 @@ select.cell-input {
                 color var(--duration-fast) var(--ease-out);
 }
 .delete-btn .icon { width: 16px; height: 16px; }
-.delete-btn:hover {
+.actions-cell .delete-btn { padding: 0 8px; }
+.delete-btn:hover:not(:disabled) {
     background: var(--danger-bg);
     color: var(--danger);
+}
+.delete-btn:disabled {
+    color: var(--text-subtle);
+    cursor: default;
+}
+
+/* ---------- Selecting rows (bulk remove) ---------- */
+
+.book-table .select-cell { width: 34px; }
+.row-check {
+    display: block;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+.row-check:disabled { cursor: default; }
+.book-table tbody tr.is-selected,
+.book-table tbody tr.is-selected:hover { background: var(--primary-subtle); }
+
+/* Sits above the table at a fixed height, so it never shifts the rows. */
+.selection-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+    min-height: var(--control-height);
+}
+.selection-bar[hidden] { display: none; }
+.selection-count {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+.selection-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+.selection-actions .btn-link { font-size: 14px; }
+/* Quiet until something is ticked, then plainly the thing to press. */
+#remove-selected:not(:disabled) {
+    background: var(--danger-bg);
+    color: var(--danger);
+}
+#remove-selected:not(:disabled):hover {
+    background: var(--danger);
+    color: var(--on-danger);
 }
 
 /* ---------- Date precision badge ---------- */
