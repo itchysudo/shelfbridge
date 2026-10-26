@@ -723,8 +723,9 @@ function renderReviewsOption(withReview, target) {
 
     const spoilers = withReview.filter((b) => b.review_spoiler).length;
     const parts = [target.reviewNote];
+    document.getElementById("reviews-beta").hidden = target.reviewsConfirmed;
     if (!target.reviewsConfirmed) {
-        parts.push(`We haven't yet confirmed that ${target.label} keeps them when it imports the file.`);
+        parts.push(`Reviews are in beta for ${target.label}, so check they arrived after you import.`);
     }
     if (spoilers) {
         parts.push(spoilers === 1
